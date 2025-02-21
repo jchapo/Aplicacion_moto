@@ -8,6 +8,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.moto_version.models.Recojo
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -72,13 +73,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         db.collection("recojos")
             .get()
             .addOnSuccessListener { result ->
-                val listaDocumentos = result.documents.map { it.id }
-                adapter.actualizarLista(listaDocumentos)  // Actualizar el RecyclerView
+                val listaRecojos = result.documents.mapNotNull { doc ->
+                    val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
+                    val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
+                    val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "0.00"
+                    Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
+                }
+                adapter.actualizarLista(listaRecojos)  // Actualizar RecyclerView
             }
             .addOnFailureListener { exception ->
                 Log.e("Firestore", "Error al obtener documentos", exception)
             }
     }
+
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
