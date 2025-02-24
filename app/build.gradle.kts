@@ -36,6 +36,10 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -52,6 +56,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation ("com.google.firebase:firebase-firestore-ktx")
-
+    implementation ("com.google.android.gms:play-services-auth:20.7.0")
+    implementation ("com.google.firebase:firebase-auth-ktx:23.2.0")
+    implementation ("com.google.firebase:firebase-firestore-ktx")
+    implementation ("androidx.credentials:credentials:1.2.0")
+    implementation ("androidx.credentials:credentials-play-services-auth:1.2.0")
 
 }
