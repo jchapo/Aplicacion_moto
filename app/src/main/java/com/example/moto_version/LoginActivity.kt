@@ -19,6 +19,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var oneTapClient: SignInClient
     private val db = FirebaseFirestore.getInstance()
+    private var isSigningIn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,8 +37,15 @@ class LoginActivity : AppCompatActivity() {
                     .build()
             ).build()
 
-        findViewById<SignInButton>(R.id.btnGoogleSignIn).setOnClickListener {
-        oneTapClient.beginSignIn(signInRequest)
+        val signInButton = findViewById<SignInButton>(R.id.btnGoogleSignIn)
+
+        signInButton.setOnClickListener {
+            if (isSigningIn) return@setOnClickListener  // Evita múltiples clics
+
+            isSigningIn = true
+            signInButton.isEnabled = false  // Deshabilita el botón
+
+            oneTapClient.beginSignIn(signInRequest)
                 .addOnSuccessListener { result ->
                     startIntentSenderForResult(
                         result.pendingIntent.intentSender, 100,
@@ -47,6 +55,8 @@ class LoginActivity : AppCompatActivity() {
                 .addOnFailureListener { e ->
                     Log.e("LoginActivity", "Error al iniciar sesión", e)
                     Toast.makeText(this, "Error al iniciar sesión", Toast.LENGTH_SHORT).show()
+                    isSigningIn = false
+                    signInButton.isEnabled = true  // Rehabilita el botón en caso de error
                 }
         }
     }
@@ -66,14 +76,24 @@ class LoginActivity : AppCompatActivity() {
                                 val user = auth.currentUser
                                 user?.email?.let { obtenerRolDeFirestore(it) }
                             } else {
-                                Toast.makeText(this, "Error en autenticación", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "Error en autenticación", Toast.LENGTH_SHORT)
+                                    .show()
+                                resetSignInState()  // Restablece estado si falla la autenticación
                             }
                         }
+                } else {
+                    resetSignInState()  // Restablece estado si no hay token
                 }
             } catch (e: Exception) {
                 Log.e("LoginActivity", "Error en onActivityResult", e)
+                resetSignInState()
             }
         }
+    }
+
+    private fun resetSignInState() {
+        isSigningIn = false
+        findViewById<SignInButton>(R.id.btnGoogleSignIn).isEnabled = true
     }
 
     private fun obtenerRolDeFirestore(email: String) {

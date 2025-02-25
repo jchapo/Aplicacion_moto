@@ -51,6 +51,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
+    data class PuntoRecojo(val ubicacion: LatLng, val clienteNombre: String)
+    private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,7 +165,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     return@addSnapshotListener
                 }
 
-                coordenadasLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
+                puntosRecojoLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
                 val listaRecojos = snapshots.documents.mapNotNull { doc ->
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
@@ -176,8 +179,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        coordenadasLista.add(ubicacion)
-                        Log.d("Firestore", "Coordenadas obtenidas: $ubicacion")
+                        puntosRecojoLista.add(PuntoRecojo(ubicacion, clienteNombre))
+                        Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
 
                     Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
@@ -293,15 +296,17 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun agregarMarcadores() {
-        mMap?.clear() // Limpiar marcadores existentes
+        mMap?.clear()
         mMap?.let { map ->
-            for ((index, ubicacion) in coordenadasLista.withIndex()) {
-                val clienteNombre = adapter.obtenerNombreCliente(index) ?: "Cliente desconocido"
-                map.addMarker(MarkerOptions().position(ubicacion).title(clienteNombre))
+            for (punto in puntosRecojoLista) {
+                map.addMarker(
+                    MarkerOptions()
+                        .position(punto.ubicacion)
+                        .title(punto.clienteNombre)
+                )
             }
         }
     }
-
 
     private fun showToast(mensaje: String) {
         Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
@@ -344,7 +349,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun centrarMapaConUbicacion(ubicacionUsuario: LatLng) {
-        if (coordenadasLista.isEmpty() && mMap != null) {
+        if (puntosRecojoLista.isEmpty() && mMap != null) {
             // Si no hay marcadores, centrar solo en la ubicación del usuario
             mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 15f))
             return
@@ -356,39 +361,35 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             // Incluir la ubicación del usuario
             boundsBuilder.include(ubicacionUsuario)
 
-            // Incluir todas las coordenadas de marcadores
-            for (ubicacion in coordenadasLista) {
-                boundsBuilder.include(ubicacion)
+            // Incluir todas las coordenadas de los puntos de recojo
+            for (punto in puntosRecojoLista) {
+                boundsBuilder.include(punto.ubicacion)
             }
 
             // Obtener los límites y mover la cámara
             val bounds = boundsBuilder.build()
-            val padding = 200  // Margen en píxeles
+            val padding = 80  // Margen en píxeles
 
-            // Usar Handler para asegurar que la operación se realice en el hilo principal
             Handler(Looper.getMainLooper()).postDelayed({
                 try {
                     mMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Error en animateCamera con ubicación", e)
                     try {
-                        // Si falla, intentar con moveCamera
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                     } catch (e2: Exception) {
-                        // Si todo falla, centrar en la ubicación del usuario
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 12f))
                     }
                 }
             }, 300)
         } catch (e: Exception) {
             Log.e("MainActivity", "Error al centrar mapa con ubicación", e)
-            // Plan B: centrar en la ubicación del usuario
             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 12f))
         }
     }
 
     private fun centrarMapaSinUbicacion() {
-        if (coordenadasLista.isEmpty()) {
+        if (puntosRecojoLista.isEmpty()) {
             Log.d("MainActivity", "No hay coordenadas para centrar el mapa")
             return
         }
@@ -396,35 +397,32 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         try {
             val boundsBuilder = LatLngBounds.Builder()
 
-            // Incluir todas las coordenadas
-            for (ubicacion in coordenadasLista) {
-                boundsBuilder.include(ubicacion)
+            // Incluir todas las coordenadas de los puntos de recojo
+            for (punto in puntosRecojoLista) {
+                boundsBuilder.include(punto.ubicacion)
             }
 
             // Obtener los límites y mover la cámara
             val bounds = boundsBuilder.build()
             val padding = 200  // Margen en píxeles
 
-            // Usar Handler para asegurar que la operación se realice en el hilo principal
             Handler(Looper.getMainLooper()).postDelayed({
                 try {
                     mMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Error en animateCamera", e)
                     try {
-                        // Si falla, intentar con moveCamera
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                     } catch (e2: Exception) {
-                        // Si todo falla, centrar en la primera coordenada
-                        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(coordenadasLista[0], 12f))
+                        // Si todo falla, centrar en la primera coordenada disponible
+                        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(puntosRecojoLista[0].ubicacion, 12f))
                     }
                 }
             }, 300)
         } catch (e: Exception) {
             Log.e("MainActivity", "Error al centrar mapa", e)
-            // Plan B: Si hay un error, centrar en la primera coordenada
             Handler(Looper.getMainLooper()).postDelayed({
-                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(coordenadasLista[0], 12f))
+                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(puntosRecojoLista[0].ubicacion, 12f))
             }, 300)
         }
     }
