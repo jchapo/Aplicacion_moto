@@ -49,10 +49,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var datosCargados = false  // Variable para controlar si los datos están cargados
     private var ubicacionDisponible = false  // Variable para controlar si la ubicación está disponible
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
+    private var rutaMotorizado: String = ""
+    private var recojosListener: ListenerRegistration? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        rutaMotorizado = intent.getStringExtra("ruta") ?: ""
+        Log.d("MainActivity", "Ruta recibida: $rutaMotorizado")
 
         escucharCambiosEnUsuario()
 
@@ -134,13 +140,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun obtenerDatosFirestore() {
-        db.collection("recojos")
-            .get()
-            .addOnSuccessListener { result ->
-                Log.d("Firestore", "Cantidad de documentos: ${result.size()}")
+        if (rutaMotorizado.isEmpty()) {
+            Log.e("Firestore", "Error: rutaMotorizado está vacío")
+            return
+        }
+
+        // Remover listener anterior si existe
+        recojosListener?.remove()
+
+        // Configurar un listener en tiempo real
+        recojosListener = db.collection("recojos")
+            .whereEqualTo("motorizadoRecojo", rutaMotorizado)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Log.e("Firestore", "Error al obtener documentos", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots == null) {
+                    Log.d("Firestore", "Snapshot nulo")
+                    return@addSnapshotListener
+                }
+
                 coordenadasLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
-                val listaRecojos = result.documents.mapNotNull { doc ->
+                val listaRecojos = snapshots.documents.mapNotNull { doc ->
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "0.00"
@@ -158,6 +182,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
                 }
+
                 adapter.actualizarLista(listaRecojos)
 
                 // Indicar que los datos están cargados
@@ -168,10 +193,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     actualizarMapa()
                 }
             }
-            .addOnFailureListener { exception ->
-                Log.e("Firestore", "Error al obtener documentos", exception)
-            }
     }
+
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
@@ -272,11 +295,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun agregarMarcadores() {
         mMap?.clear() // Limpiar marcadores existentes
         mMap?.let { map ->
-            for (ubicacion in coordenadasLista) {
-                map.addMarker(MarkerOptions().position(ubicacion).title("Recojo"))
+            for ((index, ubicacion) in coordenadasLista.withIndex()) {
+                val clienteNombre = adapter.obtenerNombreCliente(index) ?: "Cliente desconocido"
+                map.addMarker(MarkerOptions().position(ubicacion).title(clienteNombre))
             }
         }
     }
+
 
     private fun showToast(mensaje: String) {
         Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
@@ -301,10 +326,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        usuarioListener?.remove()
-    }
 
     private fun cerrarSesion() {
         FirebaseAuth.getInstance().signOut()  // Cerrar sesión en Firebase
@@ -443,5 +464,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 centrarMapaSinUbicacion()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        usuarioListener?.remove()
+        recojosListener?.remove() // Añadir esta línea
     }
 }

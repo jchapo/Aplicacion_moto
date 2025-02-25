@@ -39,4 +39,9 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         listaRecojos = nuevaLista
         notifyDataSetChanged()
     }
+
+    fun obtenerNombreCliente(index: Int): String? {
+        return if (index in listaRecojos.indices) listaRecojos[index].clienteNombre else null
+    }
+
 }

@@ -80,11 +80,16 @@ class LoginActivity : AppCompatActivity() {
         db.collection("usuarios").whereEqualTo("email", email).get()
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty) {
-                    val rol = documents.documents[0].getString("rol") ?: "Usuario"
+                    val document = documents.documents[0]
+                    val rol = document.getString("rol") ?: "Usuario"
+                    val ruta = document.getString("ruta") ?: ""  // Obtén la ruta desde Firestore
 
                     if (rol == "Motorizado") {
                         Toast.makeText(this, "Bienvenido Motorizado", Toast.LENGTH_LONG).show()
-                        startActivity(Intent(this, MainActivity::class.java))
+                        val intent = Intent(this, MainActivity::class.java).apply {
+                            putExtra("ruta", ruta)  // Pasa la variable "ruta"
+                        }
+                        startActivity(intent)
                         finish()
                     } else {
                         Toast.makeText(this, "No eres motorizado", Toast.LENGTH_LONG).show()
@@ -101,6 +106,7 @@ class LoginActivity : AppCompatActivity() {
                 Log.e("Firestore", "Error obteniendo rol", exception)
             }
     }
+
 
 
 }
