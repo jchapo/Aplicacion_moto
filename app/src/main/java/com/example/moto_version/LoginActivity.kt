@@ -88,14 +88,19 @@ class LoginActivity : AppCompatActivity() {
                         finish()
                     } else {
                         Toast.makeText(this, "No eres motorizado", Toast.LENGTH_LONG).show()
+                        auth.signOut()  // ❌ Cerrar sesión
                     }
                 } else {
                     Toast.makeText(this, "Usuario no registrado", Toast.LENGTH_LONG).show()
+                    auth.signOut()  // ❌ Cerrar sesión
+                    startActivity(Intent(this, LoginActivity::class.java))
+                    finish()
                 }
             }
             .addOnFailureListener { exception ->
                 Log.e("Firestore", "Error obteniendo rol", exception)
             }
     }
+
 
 }
