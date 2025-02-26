@@ -53,8 +53,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoRecojo(val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
-    data class PuntoEntrega(val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
+    data class PuntoRecojo(val id: String,  val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
+    data class PuntoEntrega(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
     private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
     private val puntosEntregaLista = mutableListOf<PuntoEntrega>()
 
@@ -173,6 +173,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 puntosRecojoLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
                 val listaRecojos = snapshots.documents.mapNotNull { doc ->
+                    val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "0.00"
@@ -184,11 +185,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoRecojo(ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
+                        puntosRecojoLista.add(PuntoRecojo(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
 
-                    Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
+                    Recojo(id, clienteNombre, proveedorNombre, pedidoCantidadCobrar)
                 }
 
                 // adapter.actualizarLista(listaRecojos)
@@ -218,6 +219,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
                 val listaEntregas = snapshots.documents.mapNotNull { doc ->
+                    val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
@@ -229,11 +231,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosEntregaLista.add(PuntoEntrega(ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
+                        puntosEntregaLista.add(PuntoEntrega(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
                         Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
                     }
 
-                    Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
+                    Recojo(id, clienteNombre, proveedorNombre, pedidoCantidadCobrar)
                 }
 
                 // adapter.actualizarLista(listaRecojos)
@@ -361,7 +363,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 map.addMarker(
                     MarkerOptions()
                         .position(punto.ubicacion)
-                        .title("Recojo: ${punto.clienteNombre}")
+                        .title("Recojo: ${punto.proveedorNombre}")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
                 )
                 boundsBuilder.include(punto.ubicacion)
@@ -582,7 +584,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }.sortedBy { it.second } // Ordena la lista según la distancia
 
         val listaFinal = listaOrdenada.map { (punto, _) ->
-            Recojo(punto.clienteNombre, punto.proveedorNombre, "--------")
+            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, "--------")
         }
 
         adapter.actualizarLista(listaFinal)

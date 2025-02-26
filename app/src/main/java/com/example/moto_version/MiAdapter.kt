@@ -1,5 +1,6 @@
 package com.example.moto_version
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,9 +29,19 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         holder.tvClienteNombre.text = recojo.clienteNombre
         holder.tvProveedorNombre.text = recojo.proveedorNombre
         holder.tvPrecio.text = "S/ ${recojo.pedidoCantidadCobrar}"
-
-        // Imagen por defecto (puedes cambiar esto para cargar imágenes dinámicamente)
         holder.imagenRecojo.setImageResource(R.drawable.imagen)
+
+        // Agregar clic para abrir una nueva actividad
+        holder.itemView.setOnClickListener {
+            val context = it.context
+            val intent = Intent(context, DetalleRecojoActivity::class.java).apply {
+                putExtra("id", recojo.id)
+                putExtra("clienteNombre", recojo.clienteNombre)
+                putExtra("proveedorNombre", recojo.proveedorNombre)
+                putExtra("pedidoCantidadCobrar", recojo.pedidoCantidadCobrar)
+            }
+            context.startActivity(intent)
+        }
     }
 
     override fun getItemCount(): Int = listaRecojos.size
@@ -39,9 +50,5 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         listaRecojos = nuevaLista
         notifyDataSetChanged()
     }
-
-    fun obtenerNombreCliente(index: Int): String? {
-        return if (index in listaRecojos.indices) listaRecojos[index].clienteNombre else null
-    }
-
 }
+
