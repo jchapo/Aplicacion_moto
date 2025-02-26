@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
-    data class PuntoRecojo(val ubicacion: LatLng, val clienteNombre: String)
+    data class PuntoRecojo(val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
     private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
 
 
@@ -179,14 +179,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoRecojo(ubicacion, clienteNombre))
+                        puntosRecojoLista.add(PuntoRecojo(ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
 
                     Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
                 }
 
-                adapter.actualizarLista(listaRecojos)
+                // adapter.actualizarLista(listaRecojos)
 
                 // Indicar que los datos están cargados
                 datosCargados = true
@@ -282,6 +282,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 Log.d("MainActivity", "Ubicación obtenida: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
                 val ubicacionUsuario = LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
                 centrarMapaConUbicacion(ubicacionUsuario)
+                actualizarListaOrdenada(ubicacionUsuario)
             } else {
                 Log.d("MainActivity", "No se pudo obtener la ubicación actual")
                 // Si no hay ubicación disponible, centrar solo con marcadores
@@ -463,6 +464,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
+
+    private fun actualizarListaOrdenada(ubicacionUsuario: LatLng) {
+        val listaOrdenada = puntosRecojoLista.map { punto ->
+            val resultado = FloatArray(1)
+            Location.distanceBetween(
+                ubicacionUsuario.latitude, ubicacionUsuario.longitude,
+                punto.ubicacion.latitude, punto.ubicacion.longitude,
+                resultado
+            )
+            punto to resultado[0] // Asigna la distancia en metros
+        }.sortedBy { it.second } // Ordena la lista según la distancia
+
+        val listaFinal = listaOrdenada.map { (punto, _) ->
+            Recojo(punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar)
+        }
+
+        adapter.actualizarLista(listaFinal)
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()
