@@ -1,6 +1,6 @@
 package com.example.moto_version.models
 
-import java.security.Timestamp
+import com.google.firebase.Timestamp
 
 data class Item (
     val id: String = "",

@@ -13,12 +13,27 @@ import androidx.core.content.ContextCompat
 import com.example.moto_version.models.Item
 import com.google.firebase.firestore.FirebaseFirestore
 import android.Manifest
+import android.app.Activity
+import android.graphics.Bitmap
+import android.provider.MediaStore
+import android.util.TypedValue
+import android.view.View
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.activity.result.contract.ActivityResultContracts
 
 
 class DetalleRecojoActivity : AppCompatActivity() {
 
     private lateinit var db: FirebaseFirestore
     private var item: Item? = null  // Variable global
+    private lateinit var btnCamara: ImageButton
+    private lateinit var btnCheck: ImageButton
+    private lateinit var imagenRecojo: ImageView
+
+    companion object {
+        private const val REQUEST_CAMERA_PERMISSION = 100
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,25 +43,45 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val clienteNombre = intent.getStringExtra("clienteNombre")
         val proveedorNombre = intent.getStringExtra("proveedorNombre")
         val pedidoCantidadCobrar = intent.getStringExtra("pedidoCantidadCobrar")
+        val fechaRecojoPedidoMotorizado = intent.getStringExtra("fechaRecojoPedidoMotorizado")
+        val fechaEntregaPedidoMotorizado = intent.getStringExtra("fechaEntregaPedidoMotorizado")
 
         val tvCliente = findViewById<TextView>(R.id.tvDetalleCliente)
         val tvProveedor = findViewById<TextView>(R.id.tvDetalleProveedor)
         val tvPrecio = findViewById<TextView>(R.id.tvDetallePrecio)
+        val tvCardCliente = findViewById<LinearLayout>(R.id.tvCardCliente)
+        val tvCardProveedor = findViewById<LinearLayout>(R.id.tvCardProveedor)
 
         val btnTelefonoCliente = findViewById<ImageButton>(R.id.btnTelefonoCliente)
         val btnTelefonoProveedor = findViewById<ImageButton>(R.id.btnTelefonoProveedor)
         val btnWhatsappCliente = findViewById<ImageButton>(R.id.btnWhatsappCliente)
         val btnWhatsappProveedor = findViewById<ImageButton>(R.id.btnWhatsappProveedor)
+        btnCamara = findViewById<ImageButton>(R.id.btnCamara)
 
         val btnMapsPedido = findViewById<ImageButton>(R.id.btnMapsCliente)
         val btnMapsRecojo = findViewById<ImageButton>(R.id.btnMapsProveedor)
 
+        imagenRecojo = findViewById(R.id.imagenRecojo)
+        btnCheck = findViewById(R.id.btnCheck)
 
+        btnCamara.setOnClickListener {
+            abrirCamara()
+        }
 
         // Inicializamos los textos con los valores del intent
         tvCliente.text = clienteNombre
         tvProveedor.text = proveedorNombre
         tvPrecio.text = "Monto a cobrar: S/ $pedidoCantidadCobrar"
+
+        // Ocultar el LinearLayout si fechaRecojoPedidoMotorizado es null o está vacío
+        if (fechaRecojoPedidoMotorizado.isNullOrEmpty()) {
+            tvPrecio.text = "RECOJO PENDIENTE"
+            tvCardCliente.visibility = View.GONE
+            val typedValue = TypedValue()
+            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+            btnCamara.setBackgroundColor(typedValue.data)
+
+        }
 
         db = FirebaseFirestore.getInstance()
 
@@ -82,14 +117,45 @@ class DetalleRecojoActivity : AppCompatActivity() {
             }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            // Si el usuario otorgó el permiso, puedes volver a intentar la llamada aquí si lo deseas
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && item?.fechaRecojoPedidoMotorizado == null) {
+            val data: Intent? = result.data
+            val imageBitmap = data?.extras?.get("data") as? Bitmap
+            if (imageBitmap != null) {
+                imagenRecojo.setImageBitmap(imageBitmap)
+                btnCamara.background = null
+                val typedValue = TypedValue()
+                theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+                btnCheck.setBackgroundColor(typedValue.data)
+            } else {
+                Log.e("Cámara", "No se recibió imagen desde la cámara.")
+            }
         } else {
-            Log.e("Permisos", "El usuario denegó el permiso para realizar llamadas.")
+            Log.e("Cámara", "Captura de imagen cancelada o fallida.")
         }
     }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        when (requestCode) {
+            REQUEST_CAMERA_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    abrirCamara()
+                } else {
+                    Log.e("Permisos", "El usuario denegó el permiso para la cámara.")
+                }
+            }
+            1 -> { // Este es el permiso para llamadas
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d("Permisos", "Permiso de llamadas concedido.")
+                } else {
+                    Log.e("Permisos", "El usuario denegó el permiso para realizar llamadas.")
+                }
+            }
+        }
+    }
+
 
 
     private fun actualizarBotonesLlamada(
@@ -222,6 +288,15 @@ class DetalleRecojoActivity : AppCompatActivity() {
         } else {
             // Solicitar permiso en tiempo de ejecución
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE), 1)
+        }
+    }
+
+    private fun abrirCamara() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+        } else {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            cameraLauncher.launch(intent)
         }
     }
 }

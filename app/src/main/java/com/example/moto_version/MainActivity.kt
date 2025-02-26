@@ -34,6 +34,7 @@ import android.content.Context
 import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.firebase.Timestamp
 
 private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
 private const val REQUEST_LOCATION_SETTINGS = 1002
@@ -52,8 +53,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoRecojo(val id: String,  val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String)
-    data class PuntoEntrega(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String)
+    data class PuntoRecojo(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?)
+    data class PuntoEntrega(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?)
     private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
     private val puntosEntregaLista = mutableListOf<PuntoEntrega>()
 
@@ -177,6 +178,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "0.00"
                     val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
+                    val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
+                    val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("recojoCoordenadas") as? Map<String, Any>
@@ -185,7 +188,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoRecojo(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago))
+                        puntosRecojoLista.add(PuntoRecojo(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
                 }
@@ -222,6 +225,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
                     val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
+                    val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
+                    val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
+
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
@@ -231,7 +237,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosEntregaLista.add(PuntoEntrega(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago))
+                        puntosEntregaLista.add(PuntoEntrega(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
                         Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
                     }
                 }
@@ -577,7 +583,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }.sortedBy { it.second } // Ordena la lista según la distancia
 
         val listaFinal = listaOrdenada.map { (punto, _) ->
-            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago)
+            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago, punto.fechaEntregaPedidoMotorizado, punto.fechaRecojoPedidoMotorizado)
         }
 
         adapter.actualizarLista(listaFinal)
