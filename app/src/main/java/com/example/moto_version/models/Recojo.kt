@@ -4,5 +4,6 @@ data class Recojo(
     val id: String ="",
     val clienteNombre: String = "",
     val proveedorNombre: String = "",
-    val pedidoCantidadCobrar: String = "0.00"
-)
+    val pedidoCantidadCobrar: String = "0.00",
+    val pedidoMetodoPago: String = ""
+    )

@@ -46,15 +46,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
     private var usuarioListener: ListenerRegistration? = null
-    //private val coordenadasLista = mutableListOf<LatLng>()
     private var datosCargados = false  // Variable para controlar si los datos están cargados
     private var ubicacionDisponible = false  // Variable para controlar si la ubicación está disponible
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoRecojo(val id: String,  val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
-    data class PuntoEntrega(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
+    data class PuntoRecojo(val id: String,  val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String)
+    data class PuntoEntrega(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String)
     private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
     private val puntosEntregaLista = mutableListOf<PuntoEntrega>()
 
@@ -172,11 +171,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 puntosRecojoLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
-                val listaRecojos = snapshots.documents.mapNotNull { doc ->
+                snapshots.documents.forEach { doc ->
                     val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "0.00"
+                    val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("recojoCoordenadas") as? Map<String, Any>
@@ -185,21 +185,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoRecojo(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
+                        puntosRecojoLista.add(PuntoRecojo(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
-
-                    Recojo(id, clienteNombre, proveedorNombre, pedidoCantidadCobrar)
                 }
 
-                // adapter.actualizarLista(listaRecojos)
+
 
                 // Indicar que los datos están cargados
                 //datosCargados = true
 
                 // Agregar marcadores y centrar el mapa solo si ya está inicializado
                 mMap?.let {
-                    //actualizarMapa()
+                    actualizarMapa()
                 }
             }
 
@@ -218,33 +216,28 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
-                val listaEntregas = snapshots.documents.mapNotNull { doc ->
+                snapshots.documents.forEach { doc ->
                     val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
+                    val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
                     val latitud = coordenadas?.get("lat") as? Double
                     val longitud = coordenadas?.get("lng") as? Double
 
+
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosEntregaLista.add(PuntoEntrega(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
+                        puntosEntregaLista.add(PuntoEntrega(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago))
                         Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
                     }
-
-                    Recojo(id, clienteNombre, proveedorNombre, pedidoCantidadCobrar)
                 }
-
-                // adapter.actualizarLista(listaRecojos)
 
                 // Indicar que los datos están cargados
                 datosCargados = true
-
-                Log.d("MainActivity", "Datos de recogida cargados: ${puntosRecojoLista.size}")
-                Log.d("MainActivity", "Datos de entrega cargados: ${puntosEntregaLista.size}")
 
                 // Agregar marcadores y centrar el mapa solo si ya está inicializado
                 mMap?.let {
@@ -584,7 +577,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }.sortedBy { it.second } // Ordena la lista según la distancia
 
         val listaFinal = listaOrdenada.map { (punto, _) ->
-            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, "--------")
+            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago)
         }
 
         adapter.actualizarLista(listaFinal)

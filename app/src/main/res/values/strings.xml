@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Moto_version</string>
+    <string name="telefono_description">telefono</string>
+    <string name="whatsapp_description">whatsaapp</string>
+    <string name="maps_description">google maps</string>
+    <string name="waze_description">waze</string>
 </resources>
