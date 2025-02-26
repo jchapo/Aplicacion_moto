@@ -33,6 +33,7 @@ import android.location.LocationManager
 import android.content.Context
 import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
 private const val REQUEST_LOCATION_SETTINGS = 1002
@@ -51,8 +52,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
+    private var entregasListener: ListenerRegistration? = null
     data class PuntoRecojo(val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
+    data class PuntoEntrega(val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String)
     private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
+    private val puntosEntregaLista = mutableListOf<PuntoEntrega>()
 
 
 
@@ -150,6 +154,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Remover listener anterior si existe
         recojosListener?.remove()
+        entregasListener?.remove()
 
         // Configurar un listener en tiempo real
         recojosListener = db.collection("recojos")
@@ -173,7 +178,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "0.00"
 
                     // Obtener coordenadas
-                    val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
+                    val coordenadas = doc.get("recojoCoordenadas") as? Map<String, Any>
                     val latitud = coordenadas?.get("lat") as? Double
                     val longitud = coordenadas?.get("lng") as? Double
 
@@ -189,10 +194,59 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 // adapter.actualizarLista(listaRecojos)
 
                 // Indicar que los datos están cargados
-                datosCargados = true
+                //datosCargados = true
 
                 // Agregar marcadores y centrar el mapa solo si ya está inicializado
                 mMap?.let {
+                    //actualizarMapa()
+                }
+            }
+
+        entregasListener = db.collection("recojos")
+            .whereEqualTo("motorizadoEntrega", rutaMotorizado)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Log.e("Firestore", "Error al obtener documentos", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots == null) {
+                    Log.d("Firestore", "Snapshot nulo")
+                    return@addSnapshotListener
+                }
+
+                puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
+
+                val listaEntregas = snapshots.documents.mapNotNull { doc ->
+                    val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
+                    val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
+                    val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
+
+                    // Obtener coordenadas
+                    val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
+                    val latitud = coordenadas?.get("lat") as? Double
+                    val longitud = coordenadas?.get("lng") as? Double
+
+                    if (latitud != null && longitud != null) {
+                        val ubicacion = LatLng(latitud, longitud)
+                        puntosEntregaLista.add(PuntoEntrega(ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar))
+                        Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
+                    }
+
+                    Recojo(clienteNombre, proveedorNombre, pedidoCantidadCobrar)
+                }
+
+                // adapter.actualizarLista(listaRecojos)
+
+                // Indicar que los datos están cargados
+                datosCargados = true
+
+                Log.d("MainActivity", "Datos de recogida cargados: ${puntosRecojoLista.size}")
+                Log.d("MainActivity", "Datos de entrega cargados: ${puntosEntregaLista.size}")
+
+                // Agregar marcadores y centrar el mapa solo si ya está inicializado
+                mMap?.let {
+
                     actualizarMapa()
                 }
             }
@@ -297,14 +351,38 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun agregarMarcadores() {
-        mMap?.clear()
         mMap?.let { map ->
+            map.clear() // Mover dentro del let para evitar llamada innecesaria si mMap es null
+
+            val boundsBuilder = LatLngBounds.Builder()
+
+            // Agregar marcadores de recojo con color AZUL
             for (punto in puntosRecojoLista) {
                 map.addMarker(
                     MarkerOptions()
                         .position(punto.ubicacion)
-                        .title(punto.clienteNombre)
+                        .title("Recojo: ${punto.clienteNombre}")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
                 )
+                boundsBuilder.include(punto.ubicacion)
+            }
+
+            // Agregar marcadores de entrega con color ROJO
+            for (punto in puntosEntregaLista) {
+                map.addMarker(
+                    MarkerOptions()
+                        .position(punto.ubicacion)
+                        .title("Entrega: ${punto.clienteNombre}")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                )
+                boundsBuilder.include(punto.ubicacion)
+            }
+
+            // Ajustar el zoom si hay al menos un marcador
+            if (puntosRecojoLista.isNotEmpty() || puntosEntregaLista.isNotEmpty()) {
+                val bounds = boundsBuilder.build()
+                val padding = 100 // Espaciado en píxeles alrededor de los puntos
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
             }
         }
     }
@@ -332,7 +410,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-
     private fun cerrarSesion() {
         FirebaseAuth.getInstance().signOut()  // Cerrar sesión en Firebase
         val intent = Intent(this, LoginActivity::class.java)  // Redirigir a la pantalla de login
@@ -350,7 +427,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun centrarMapaConUbicacion(ubicacionUsuario: LatLng) {
-        if (puntosRecojoLista.isEmpty() && mMap != null) {
+        if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty() && mMap != null) {
             // Si no hay marcadores, centrar solo en la ubicación del usuario
             mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 15f))
             return
@@ -364,6 +441,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
             // Incluir todas las coordenadas de los puntos de recojo
             for (punto in puntosRecojoLista) {
+                boundsBuilder.include(punto.ubicacion)
+            }
+
+            // Incluir todas las coordenadas de los puntos de entrega
+            for (punto in puntosEntregaLista) {
                 boundsBuilder.include(punto.ubicacion)
             }
 
@@ -390,17 +472,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun centrarMapaSinUbicacion() {
-        if (puntosRecojoLista.isEmpty()) {
+        if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty()) {
             Log.d("MainActivity", "No hay coordenadas para centrar el mapa")
             return
         }
 
         try {
             val boundsBuilder = LatLngBounds.Builder()
+            var hayPuntos = false
 
             // Incluir todas las coordenadas de los puntos de recojo
             for (punto in puntosRecojoLista) {
                 boundsBuilder.include(punto.ubicacion)
+                hayPuntos = true
+            }
+
+            // Incluir todas las coordenadas de los puntos de entrega
+            for (punto in puntosEntregaLista) {
+                boundsBuilder.include(punto.ubicacion)
+                hayPuntos = true
+            }
+
+            if (!hayPuntos) {
+                Log.d("MainActivity", "No hay coordenadas válidas para centrar el mapa")
+                return
             }
 
             // Obtener los límites y mover la cámara
@@ -416,14 +511,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                     } catch (e2: Exception) {
                         // Si todo falla, centrar en la primera coordenada disponible
-                        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(puntosRecojoLista[0].ubicacion, 12f))
+                        val primerPunto = if (puntosRecojoLista.isNotEmpty()) {
+                            puntosRecojoLista[0].ubicacion
+                        } else {
+                            puntosEntregaLista[0].ubicacion
+                        }
+                        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(primerPunto, 12f))
                     }
                 }
             }, 300)
         } catch (e: Exception) {
             Log.e("MainActivity", "Error al centrar mapa", e)
             Handler(Looper.getMainLooper()).postDelayed({
-                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(puntosRecojoLista[0].ubicacion, 12f))
+                val primerPunto = if (puntosRecojoLista.isNotEmpty()) {
+                    puntosRecojoLista[0].ubicacion
+                } else {
+                    puntosEntregaLista[0].ubicacion
+                }
+                mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(primerPunto, 12f))
             }, 300)
         }
     }
@@ -477,16 +582,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }.sortedBy { it.second } // Ordena la lista según la distancia
 
         val listaFinal = listaOrdenada.map { (punto, _) ->
-            Recojo(punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar)
+            Recojo(punto.clienteNombre, punto.proveedorNombre, "--------")
         }
 
         adapter.actualizarLista(listaFinal)
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         usuarioListener?.remove()
         recojosListener?.remove() // Añadir esta línea
+        entregasListener?.remove()
     }
 }
