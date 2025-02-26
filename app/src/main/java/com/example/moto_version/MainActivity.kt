@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
     private var usuarioListener: ListenerRegistration? = null
-    private val coordenadasLista = mutableListOf<LatLng>()
+    //private val coordenadasLista = mutableListOf<LatLng>()
     private var datosCargados = false  // Variable para controlar si los datos están cargados
     private var ubicacionDisponible = false  // Variable para controlar si la ubicación está disponible
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
