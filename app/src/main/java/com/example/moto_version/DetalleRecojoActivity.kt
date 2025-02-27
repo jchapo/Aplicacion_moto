@@ -36,6 +36,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private var item: Item? = null  // Variable global
     private lateinit var btnCamara: ImageButton
     private lateinit var btnCheck: ImageButton
+    private lateinit var btnEditarCliente: ImageButton
     private lateinit var imagenRecojo: ImageView
     private lateinit var imagenEntrega: ImageView
     private var seRecogioImagen: Boolean = false
@@ -90,8 +91,14 @@ class DetalleRecojoActivity : AppCompatActivity() {
         imagenRecojo = findViewById(R.id.imagenRecojo)
         imagenEntrega = findViewById(R.id.imagenEntrega)
         btnCheck = findViewById(R.id.btnCheck)
+        btnEditarCliente = findViewById(R.id.btnEditarCliente)
 
         btnCamara.setOnClickListener {
+            val typedValue = TypedValue()
+            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+            btnCamara.setBackgroundColor(typedValue.data)
+            btnCheck.isEnabled = false
+            btnCheck.background = null
             abrirCamara()
         }
 
@@ -102,6 +109,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 actualizarEstadoPedido(2)
             }
         }
+
+
 
 
         // Inicializamos los textos con los valores del intent
@@ -168,6 +177,18 @@ class DetalleRecojoActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Log.e("Firestore", "Error al obtener datos", e)
             }
+
+        btnEditarCliente.setOnClickListener {
+            val clienteId = item?.id // Asumiendo que item tiene una propiedad id
+            val clienteDistrito = item?.clienteDistrito // Asumiendo que la variable contiene el distrito actual
+
+            // Crear intent para iniciar la nueva actividad
+            val intent = Intent(this, EditClientDistrictActivity::class.java).apply {
+                putExtra("clienteId", clienteId)
+                putExtra("clienteDistrito", clienteDistrito)
+            }
+            this.startActivity(intent)
+        }
     }
 
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -312,8 +333,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private fun abrirGoogleMaps(lat: Double, lng: Double) {
         if (lat != 0.0 && lng != 0.0) {
             try {
-                // URI para abrir Google Maps en modo navegación
-                val gmmIntentUri = Uri.parse("google.navigation:q=$lat,$lng")
+                // URI para abrir el punto en el mapa
+                val gmmIntentUri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(Punto Seleccionado)")
                 val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
                 mapIntent.setPackage("com.google.android.apps.maps")
 
@@ -322,21 +343,26 @@ class DetalleRecojoActivity : AppCompatActivity() {
                     startActivity(mapIntent)
                 } else {
                     // Si Google Maps no está instalado, abrir en navegador
-                    val browserIntent = Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng"))
+                    val browserIntent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+                    )
                     startActivity(browserIntent)
                 }
             } catch (e: Exception) {
                 Log.e("Google Maps", "Error al abrir Google Maps", e)
                 // Fallback - abrir en navegador si hay error
-                val browserIntent = Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng"))
+                val browserIntent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+                )
                 startActivity(browserIntent)
             }
         } else {
             Log.e("Google Maps", "Coordenadas no disponibles (lat=$lat, lng=$lng)")
         }
     }
+
 
     private fun iniciarLlamada(numero: String) {
         val intent = Intent(Intent.ACTION_CALL).apply {
@@ -362,9 +388,12 @@ class DetalleRecojoActivity : AppCompatActivity() {
     }
 
     private fun subirFotosFirestore(imageBitmap: Bitmap, tipo: Int) {
+        // Mostrar loader en el botón de cámara
+        btnCamara.setImageResource(R.drawable.loading_animation)
+        btnCamara.isEnabled = false  // Deshabilitar el botón mientras se está subiendo
+
         val storageRef = Firebase.storage.reference
         val pedidoId = item?.id ?: return
-
         val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
         val collectionName = "recojos"
 
@@ -382,14 +411,24 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val imageRef = storageRef.child("fotospedidos/$pedidoId/$tipoOperacion.jpg")
         val thumbnailRef = storageRef.child("fotospedidos/$pedidoId/${tipoOperacion}_thumbnail.jpg")
 
+        // Variable para controlar si ambas subidas han terminado
+        var mainImageUploaded = false
+        var thumbnailUploaded = false
+
         imageRef.putBytes(imageData).addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { imageUrl ->
                 Firebase.firestore.collection(collectionName).document(pedidoId)
                     .update("pedidoFoto$tipoOperacion", imageUrl.toString())
+
+                mainImageUploaded = true
+                checkAllUploadsCompleted(tipo, mainImageUploaded, thumbnailUploaded)
             }
         }.addOnFailureListener {
             Log.e("Firebase", "Error al subir imagen de $tipoOperacion")
             Toast.makeText(this, "Error al subir la imagen de $tipoOperacion", Toast.LENGTH_SHORT).show()
+            // Restaurar el ícono de la cámara en caso de error
+            btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.isEnabled = true
         }
 
         // Subir thumbnail
@@ -398,17 +437,33 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 Firebase.firestore.collection(collectionName).document(pedidoId)
                     .update("thumbnailFoto$tipoOperacion", thumbnailUrl.toString())
 
-                // Activar botones después de subir la imagen
-                btnCamara.background = null
-                val typedValue = TypedValue()
-                theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-                btnCheck.setBackgroundColor(typedValue.data)
-                btnCheck.isEnabled = true
-                if (tipo == 1) seSubioRecogioImagen = true else seSubioEntregaImagen = true
+                thumbnailUploaded = true
+                checkAllUploadsCompleted(tipo, mainImageUploaded, thumbnailUploaded)
             }
         }.addOnFailureListener {
             Log.e("Firebase", "Error al subir thumbnail de $tipoOperacion")
             Toast.makeText(this, "Error al subir el thumbnail de $tipoOperacion", Toast.LENGTH_SHORT).show()
+            // Restaurar el ícono de la cámara en caso de error
+            btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.isEnabled = true
+        }
+    }
+
+    // Método para verificar si todas las subidas han terminado
+    private fun checkAllUploadsCompleted(tipo: Int, mainImageUploaded: Boolean, thumbnailUploaded: Boolean) {
+        if (mainImageUploaded && thumbnailUploaded) {
+            // Restaurar el ícono de la cámara
+            btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.isEnabled = true
+            btnCamara.background = null
+
+            // Activar botón de verificación
+            val typedValue = TypedValue()
+            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+            btnCheck.setBackgroundColor(typedValue.data)
+            btnCheck.isEnabled = true
+
+            if (tipo == 1) seSubioRecogioImagen = true else seSubioEntregaImagen = true
         }
     }
 

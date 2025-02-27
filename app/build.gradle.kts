@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         manifestPlaceholders["MAPS_API_KEY"] = project.properties["MAPS_API_KEY"] as String? ?: ""
-        println("MAPS_API_KEY from local.properties: " + project.properties["MAPS_API_KEY"])
+        buildConfigField("String", "GEO_API_KEY", "\"${project.findProperty("GEO_API_KEY") ?: ""}\"")
 
     }
 
@@ -38,6 +38,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         viewBinding = true
     }
 }
@@ -63,5 +64,9 @@ dependencies {
     implementation ("androidx.credentials:credentials:1.2.0")
     implementation ("androidx.credentials:credentials-play-services-auth:1.2.0")
     implementation ("com.github.bumptech.glide:glide:4.16.0")
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+
 
 }

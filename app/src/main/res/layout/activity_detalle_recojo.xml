@@ -44,16 +44,42 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Título de la tarjeta Cliente -->
-            <TextView
-                android:id="@+id/tvDetalleCliente"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Cliente: "
-                android:textSize="22sp"
-                android:textStyle="bold"
+                android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="#e0e0e0"/>
+                android:background="#e0e0e0">
+
+                <!-- Nombre del Cliente -->
+                <TextView
+                    android:id="@+id/tvDetalleCliente"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cliente: Juan Pérez"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"/>
+
+                <!-- Botón Editar -->
+                <FrameLayout
+                    android:layout_width="50dp"
+                    android:layout_height="50dp">
+
+                    <ImageButton
+                        android:id="@+id/btnEditarCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center"
+                        android:background="@null"
+                        android:src="@drawable/pen_to_square_solid"
+                        android:contentDescription="Editar Cliente"
+                        android:scaleType="fitCenter"
+                        android:padding="10dp"/>
+                </FrameLayout>
+            </LinearLayout>
+
 
             <!-- Contenedor de botones para Cliente -->
             <LinearLayout

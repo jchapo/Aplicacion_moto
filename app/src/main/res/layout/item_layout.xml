@@ -55,7 +55,8 @@
                     android:layout_height="wrap_content"
                     android:text="Nombre Cliente"
                     android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black"/>
 
                 <TextView
                     android:id="@+id/tvProveedorNombre"
@@ -63,7 +64,7 @@
                     android:layout_height="wrap_content"
                     android:text="Empresa"
                     android:textSize="16sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="@android:color/black" />
             </LinearLayout>
 
             <!-- Precio (Derecha) -->

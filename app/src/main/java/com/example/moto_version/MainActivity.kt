@@ -32,7 +32,10 @@ import android.location.Location
 import android.location.LocationManager
 import android.content.Context
 import android.provider.Settings
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.cardview.widget.CardView
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.firebase.Timestamp
 import java.util.Calendar
@@ -44,6 +47,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: MiAdapter
+    private lateinit var indUno: TextView
+    private lateinit var indDos: TextView
     private var mMap: GoogleMap? = null
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
@@ -106,6 +111,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
+
+        actualizarIndicadores()
+
     }
 
     override fun onResume() {
@@ -146,6 +154,34 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
+
+    private fun actualizarIndicadores() {
+        val cantidadPuntosRecojo = puntosRecojoLista.size
+        val cantidadPuntosRecojoEspecial = puntosRecojoListaEspecial.size
+        val cantidadPuntosEntrega = puntosEntregaLista.size
+
+        val cantidadRecojosTotal = cantidadPuntosRecojo
+        val cantidadEntregasTotal = cantidadPuntosEntrega + cantidadPuntosRecojoEspecial
+
+        // Obtener referencias a los Cards
+        val cardIndUno: CardView = findViewById(R.id.cardIndUno)
+        val cardIndDos: CardView = findViewById(R.id.cardIndDos)
+
+        // Obtener referencias a los TextView
+        val indUno: TextView = findViewById(R.id.indUno)
+        val indDos: TextView = findViewById(R.id.indDos)
+
+        // Asignar los textos
+        indUno.text = "$cantidadRecojosTotal"
+        indDos.text = "$cantidadEntregasTotal"
+
+        // Ocultar cardIndUno si no hay recojos
+        cardIndUno.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
+
+        // Ocultar cardIndDos si no hay entregas
+        cardIndDos.visibility = if (cantidadEntregasTotal == 0) View.GONE else View.VISIBLE
+    }
+
 
     private fun obtenerDatosFirestore() {
         if (rutaMotorizado.isEmpty()) {
@@ -674,6 +710,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Actualizamos el adaptador con la lista final
         adapter.actualizarLista(listaFinal)
+        actualizarIndicadores()
     }
 
     override fun onDestroy() {
