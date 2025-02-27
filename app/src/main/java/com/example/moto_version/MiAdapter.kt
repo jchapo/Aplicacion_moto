@@ -6,16 +6,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.moto_version.models.Recojo
 
 class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<MiAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val imagenRecojo: ImageView = view.findViewById(R.id.imagenRecojo)
+        val imagenRecojoItem: ImageView = view.findViewById(R.id.imagenRecojoItem)
         val tvClienteNombre: TextView = view.findViewById(R.id.tvClienteNombre)
         val tvProveedorNombre: TextView = view.findViewById(R.id.tvProveedorNombre)
         val tvPrecio: TextView = view.findViewById(R.id.tvPrecio)
+        val itemCard: CardView = view.findViewById(R.id.itemCard)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -29,7 +32,16 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         holder.tvClienteNombre.text = recojo.clienteNombre
         holder.tvProveedorNombre.text = recojo.proveedorNombre
         holder.tvPrecio.text = "S/ ${recojo.pedidoCantidadCobrar}"
-        holder.imagenRecojo.setImageResource(R.drawable.imagen)
+        holder.imagenRecojoItem.setImageResource(R.drawable.imagen)
+
+        // Verificar si la fecha de recojo es diferente de null
+        if (recojo.fechaRecojoPedidoMotorizado != null) {
+            // Si es distinto de null, cambiar el color de fondo del CardView usando backgroundTint
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.purple_200)
+        } else {
+            // Si es null, usar otro color (o el color predeterminado)
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.purple_700)
+        }
 
         // Agregar clic para abrir una nueva actividad
         holder.itemView.setOnClickListener {

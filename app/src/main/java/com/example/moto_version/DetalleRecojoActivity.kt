@@ -20,7 +20,14 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import com.bumptech.glide.Glide
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+import com.google.firebase.storage.storage
+import java.io.ByteArrayOutputStream
+import com.google.firebase.Timestamp
 
 
 class DetalleRecojoActivity : AppCompatActivity() {
@@ -30,6 +37,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private lateinit var btnCamara: ImageButton
     private lateinit var btnCheck: ImageButton
     private lateinit var imagenRecojo: ImageView
+    private var seRecogioImagen: Boolean = false
+    private var seSubioRecogioImagen: Boolean = false
 
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
@@ -68,6 +77,14 @@ class DetalleRecojoActivity : AppCompatActivity() {
             abrirCamara()
         }
 
+        btnCheck.setOnClickListener {
+            if (item?.fechaRecojoPedidoMotorizado == null && seSubioRecogioImagen) {
+                recogerPedido()
+            } else {
+                Toast.makeText(this, "Asegúrate de haber tomado y subido la foto de recogida.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Inicializamos los textos con los valores del intent
         tvCliente.text = clienteNombre
         tvProveedor.text = proveedorNombre
@@ -80,7 +97,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
             val typedValue = TypedValue()
             theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
             btnCamara.setBackgroundColor(typedValue.data)
-
+            btnCheck.isEnabled = false  // Deshabilita el botón
         }
 
         db = FirebaseFirestore.getInstance()
@@ -99,13 +116,23 @@ class DetalleRecojoActivity : AppCompatActivity() {
                     item = document.toObject(Item::class.java)  // Se asigna a la variable global
 
                     // Se actualizan los botones cuando los datos ya están cargados
-                    item?.let {
+                    item?.let { it ->
+                        // Se verifica si thumbnailFotoRecojo es null
+                        it.thumbnailFotoRecojo?.let { imageUrl ->
+                            // Si no es null, se carga la imagen en imagenRecojo
+                            Glide.with(this)
+                                .load(imageUrl)
+                                .into(imagenRecojo)
+                        }
+
+                        // Se actualizan los botones cuando los datos ya están cargados
                         actualizarBotonesLlamada(
                             btnTelefonoCliente, btnTelefonoProveedor,
                             btnWhatsappCliente, btnWhatsappProveedor,
                             btnMapsPedido, btnMapsRecojo, it
                         )
                     }
+
 
 
                 } else {
@@ -122,11 +149,10 @@ class DetalleRecojoActivity : AppCompatActivity() {
             val data: Intent? = result.data
             val imageBitmap = data?.extras?.get("data") as? Bitmap
             if (imageBitmap != null) {
+                seSubioRecogioImagen = false
+                seRecogioImagen = true
                 imagenRecojo.setImageBitmap(imageBitmap)
-                btnCamara.background = null
-                val typedValue = TypedValue()
-                theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-                btnCheck.setBackgroundColor(typedValue.data)
+                subirFotosRecojo(imageBitmap)
             } else {
                 Log.e("Cámara", "No se recibió imagen desde la cámara.")
             }
@@ -298,5 +324,72 @@ class DetalleRecojoActivity : AppCompatActivity() {
             val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             cameraLauncher.launch(intent)
         }
+    }
+
+    private fun subirFotosRecojo(imageBitmap: Bitmap) {
+        val storageRef = Firebase.storage.reference
+        val pedidoId = item?.id ?: return
+
+        // Comprimir imagen principal
+        val baos = ByteArrayOutputStream()
+        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        val imageData = baos.toByteArray()
+
+        // Crear thumbnail (imagen pequeña)
+        val thumbnailBitmap = imageBitmap
+        val baosThumbnail = ByteArrayOutputStream()
+        thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baosThumbnail)
+        val thumbnailData = baosThumbnail.toByteArray()
+
+        // Subir imagen principal
+        val imageRef = storageRef.child("fotospedidos/$pedidoId/recojo.jpg")
+        val thumbnailRef = storageRef.child("fotospedidos/$pedidoId/recojo_thumbnail.jpg")
+
+        imageRef.putBytes(imageData).addOnSuccessListener {
+            imageRef.downloadUrl.addOnSuccessListener { imageUrl ->
+                // Guardar URL en Firestore
+                Firebase.firestore.collection("recojos").document(pedidoId)
+                    .update("pedidoFotoRecojo", imageUrl.toString())
+            }
+        }.addOnFailureListener {
+            Log.e("Firebase", "Error al subir imagen de recojo")
+            Toast.makeText(this, "Error al subir la imagen de recojo", Toast.LENGTH_SHORT).show()
+        }
+
+        // Subir thumbnail
+        thumbnailRef.putBytes(thumbnailData).addOnSuccessListener {
+            thumbnailRef.downloadUrl.addOnSuccessListener { thumbnailUrl ->
+                Firebase.firestore.collection("recojos").document(pedidoId)
+                    .update("thumbnailFotoRecojo", thumbnailUrl.toString())
+
+                // Activar botones después de subir la imagen
+                btnCamara.background = null
+                val typedValue = TypedValue()
+                theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+                btnCheck.setBackgroundColor(typedValue.data)
+                btnCheck.isEnabled = true
+                seSubioRecogioImagen = true
+            }
+        }.addOnFailureListener {
+            Log.e("Firebase", "Error al subir thumbnail de recojo")
+            Toast.makeText(this, "Error al subir el thumbnail de recojo", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun recogerPedido() {
+        val pedidoId = item?.id ?: return
+        val fechaRecojo = Timestamp.now()
+
+        val db = FirebaseFirestore.getInstance()
+        db.collection("recojos").document(pedidoId)
+            .update("fechaRecojoPedidoMotorizado", fechaRecojo)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Pedido recogido con éxito.", Toast.LENGTH_SHORT).show()
+                finish() // Cierra la actividad y vuelve a la anterior
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error al actualizar la fecha de recogida", e)
+                Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
+            }
     }
 }

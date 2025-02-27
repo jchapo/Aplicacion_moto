@@ -35,6 +35,7 @@ import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.firebase.Timestamp
+import java.util.Calendar
 
 private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
 private const val REQUEST_LOCATION_SETTINGS = 1002
@@ -53,10 +54,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoRecojo(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?)
-    data class PuntoEntrega(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?)
-    private val puntosRecojoLista = mutableListOf<PuntoRecojo>()
-    private val puntosEntregaLista = mutableListOf<PuntoEntrega>()
+    data class PuntoPedido(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?)
+    private val puntosRecojoLista = mutableListOf<PuntoPedido>()
+    private val puntosRecojoListaEspecial = mutableListOf<PuntoPedido>()
+    private val puntosEntregaLista = mutableListOf<PuntoPedido>()
 
 
 
@@ -170,9 +171,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     return@addSnapshotListener
                 }
 
+                val documentosFiltrados = snapshots.documents.filter {
+                    it.get("fechaRecojoPedidoMotorizado") == null
+                }
+
                 puntosRecojoLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
-                snapshots.documents.forEach { doc ->
+                documentosFiltrados.forEach { doc ->
                     val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
@@ -188,7 +193,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoRecojo(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
+                        puntosRecojoLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
                 }
@@ -196,7 +201,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
                 // Indicar que los datos están cargados
-                //datosCargados = true
+                datosCargados = true
 
                 // Agregar marcadores y centrar el mapa solo si ya está inicializado
                 mMap?.let {
@@ -204,8 +209,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
 
+        // Obtener la hora actual del dispositivo
+        val calendar = Calendar.getInstance()
+        val horaActual = calendar.get(Calendar.HOUR_OF_DAY)
+
         entregasListener = db.collection("recojos")
-            .whereEqualTo("motorizadoEntrega", rutaMotorizado)
+            .whereEqualTo("motorizadoEntrega", rutaMotorizado) // Solo un filtro en Firestore
             .addSnapshotListener { snapshots, error ->
                 if (error != null) {
                     Log.e("Firestore", "Error al obtener documentos", error)
@@ -217,9 +226,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     return@addSnapshotListener
                 }
 
-                puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
+                val documentosFiltrados = snapshots.documents.filter {
+                    it.get("fechaRecojoPedidoMotorizado") != null &&
+                            it.get("fechaEntregaPedidoMotorizado") == null
+                }
 
-                snapshots.documents.forEach { doc ->
+                puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
+                puntosRecojoListaEspecial.clear() // Limpiar lista antes de agregar nuevas coordenadas
+
+                documentosFiltrados.forEach { doc ->
                     val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
@@ -227,18 +242,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
                     val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
                     val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
-
+                    val motorizadoRecojo = doc.getString("motorizadoRecojo")
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
                     val latitud = coordenadas?.get("lat") as? Double
                     val longitud = coordenadas?.get("lng") as? Double
 
-
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosEntregaLista.add(PuntoEntrega(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
-                        Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
+                        if (motorizadoRecojo == rutaMotorizado) {
+                            Log.d("Firestore", "Pedido recogido y listo para entrega: $id")
+                            puntosRecojoListaEspecial.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, null, fechaRecojoPedidoMotorizado))
+                        } else {
+                            puntosEntregaLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
+                            Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
+                        }
                     }
                 }
 
@@ -247,7 +266,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 // Agregar marcadores y centrar el mapa solo si ya está inicializado
                 mMap?.let {
-
                     actualizarMapa()
                 }
             }
@@ -379,8 +397,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 boundsBuilder.include(punto.ubicacion)
             }
 
+            for (punto in puntosRecojoListaEspecial) {
+                map.addMarker(
+                    MarkerOptions()
+                        .position(punto.ubicacion)
+                        .title("Entrega: ${punto.clienteNombre}")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                )
+                boundsBuilder.include(punto.ubicacion)
+            }
+
             // Ajustar el zoom si hay al menos un marcador
-            if (puntosRecojoLista.isNotEmpty() || puntosEntregaLista.isNotEmpty()) {
+            if (puntosRecojoLista.isNotEmpty() || puntosEntregaLista.isNotEmpty() || puntosRecojoListaEspecial.isNotEmpty()) {
                 val bounds = boundsBuilder.build()
                 val padding = 100 // Espaciado en píxeles alrededor de los puntos
                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
@@ -448,6 +476,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             // Incluir todas las coordenadas de los puntos de entrega
             for (punto in puntosEntregaLista) {
                 boundsBuilder.include(punto.ubicacion)
+            }
+
+            // Incluir todas las coordenadas de los puntos de entrega solo si la lista no es nula ni está vacía
+            if (!puntosRecojoListaEspecial.isNullOrEmpty()) {
+                for (punto in puntosRecojoListaEspecial) {
+                    boundsBuilder.include(punto.ubicacion)
+                }
             }
 
             // Obtener los límites y mover la cámara
@@ -572,20 +607,72 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun actualizarListaOrdenada(ubicacionUsuario: LatLng) {
-        val listaOrdenada = puntosRecojoLista.map { punto ->
+        // Obtenemos la hora actual del dispositivo
+        val horaActual = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+
+        // Verificamos si puntosRecojoListaEspecial no está vacío antes de calcular distancias
+        val puntosRecojoConDistanciaEspecial = if (puntosRecojoListaEspecial.isNotEmpty()) {
+            puntosRecojoListaEspecial.map { punto ->
+                val resultado = FloatArray(1)
+                Location.distanceBetween(
+                    ubicacionUsuario.latitude, ubicacionUsuario.longitude,
+                    punto.ubicacion.latitude, punto.ubicacion.longitude,
+                    resultado
+                )
+                punto to resultado[0]
+            }
+        } else {
+            emptyList() // Si está vacío, devuelve una lista vacía
+        }
+
+        Log.e("listaCombinada", "puntosRecojoConDistanciaEspecial: $puntosRecojoConDistanciaEspecial")
+
+        // Calculamos las distancias para puntosRecojoLista
+        val puntosRecojoConDistancia = puntosRecojoLista.map { punto ->
             val resultado = FloatArray(1)
             Location.distanceBetween(
                 ubicacionUsuario.latitude, ubicacionUsuario.longitude,
                 punto.ubicacion.latitude, punto.ubicacion.longitude,
                 resultado
             )
-            punto to resultado[0] // Asigna la distancia en metros
-        }.sortedBy { it.second } // Ordena la lista según la distancia
+            punto to resultado[0]
+        }
 
+        // Lista combinada solo si hay elementos en puntosRecojoListaEspecial
+        val listaCombinada = puntosRecojoConDistancia.toMutableList()
+        if (puntosRecojoConDistanciaEspecial.isNotEmpty()) {
+            listaCombinada.addAll(puntosRecojoConDistanciaEspecial)
+        }
+        Log.e("listaCombinada", "listaCombinada1: $listaCombinada")
+
+        // Solo después de las 13 horas, agregamos los puntos de entrega
+        if (horaActual >= 13) {
+            val puntosEntregaConDistancia = puntosEntregaLista.map { punto ->
+                val resultado = FloatArray(1)
+                Location.distanceBetween(
+                    ubicacionUsuario.latitude, ubicacionUsuario.longitude,
+                    punto.ubicacion.latitude, punto.ubicacion.longitude,
+                    resultado
+                )
+                punto to resultado[0]
+            }
+
+            // Combinamos ambas listas
+            listaCombinada.addAll(puntosEntregaConDistancia)
+            Log.e("listaCombinada", "listaCombinada2: $listaCombinada")
+        }
+
+        // Ordenamos la lista combinada por distancia
+        val listaOrdenada = listaCombinada.sortedBy { it.second }
+        Log.e("listaCombinada", "listaCombinada3: $listaCombinada")
+
+
+        // Convertimos a la lista final para el adaptador
         val listaFinal = listaOrdenada.map { (punto, _) ->
             Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago, punto.fechaEntregaPedidoMotorizado, punto.fechaRecojoPedidoMotorizado)
         }
 
+        // Actualizamos el adaptador con la lista final
         adapter.actualizarLista(listaFinal)
     }
 
