@@ -54,7 +54,6 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
                 putExtra("pedidoCantidadCobrar", recojo.pedidoCantidadCobrar)
                 putExtra("pedidoMetodoPago", recojo.pedidoMetodoPago)
                 putExtra("fechaRecojoPedidoMotorizado", recojo.fechaRecojoPedidoMotorizado?.seconds)
-                Log.d("MiAdapter", "Fecha de recojo: ${recojo.fechaRecojoPedidoMotorizado}")
                 putExtra("fechaEntregaPedidoMotorizado", recojo.fechaEntregaPedidoMotorizado?.seconds)
             }
             context.startActivity(intent)

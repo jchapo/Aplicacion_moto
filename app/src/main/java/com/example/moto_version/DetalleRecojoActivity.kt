@@ -55,6 +55,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val id = intent.getStringExtra("id")
         val clienteNombre = intent.getStringExtra("clienteNombre")
         val proveedorNombre = intent.getStringExtra("proveedorNombre")
+        val pedidoMetodoPago = intent.getStringExtra("pedidoMetodoPago")
         val pedidoCantidadCobrar = intent.getStringExtra("pedidoCantidadCobrar")
         val fechaRecojoTimestamp = intent.getLongExtra("fechaRecojoPedidoMotorizado", -1)
 
@@ -116,7 +117,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         // Inicializamos los textos con los valores del intent
         tvCliente.text = clienteNombre
         tvProveedor.text = proveedorNombre
-        tvPrecio.text = "Cobrar: S/ $pedidoCantidadCobrar"
+        tvPrecio.text = "S/ $pedidoCantidadCobrar - $pedidoMetodoPago"
 
         // Ocultar el LinearLayout si fechaRecojoPedidoMotorizado es null o está vacío
         if (fechaRecojoPedidoMotorizado == null) {
@@ -441,7 +442,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 checkAllUploadsCompleted(tipo, mainImageUploaded, thumbnailUploaded)
             }
         }.addOnFailureListener {
-            Log.e("Firebase", "Error al subir thumbnail de $tipoOperacion")
+            // Log.e("Firebase", "Error al subir thumbnail de $tipoOperacion")
             Toast.makeText(this, "Error al subir el thumbnail de $tipoOperacion", Toast.LENGTH_SHORT).show()
             // Restaurar el ícono de la cámara en caso de error
             btnCamara.setImageResource(R.drawable.camera_solid)
@@ -480,7 +481,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
             db.collection(collectionName).document(pedidoId)
                 .update(campoFecha, fecha)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Pedido de $tipoOperacion actualizado con éxito.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "$tipoOperacion finalizado con éxito.", Toast.LENGTH_SHORT).show()
                     finish() // Cierra la actividad y vuelve a la anterior
                 }
                 .addOnFailureListener { e ->
