@@ -1,6 +1,7 @@
 package com.example.moto_version
 
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -51,6 +52,10 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
                 putExtra("clienteNombre", recojo.clienteNombre)
                 putExtra("proveedorNombre", recojo.proveedorNombre)
                 putExtra("pedidoCantidadCobrar", recojo.pedidoCantidadCobrar)
+                putExtra("pedidoMetodoPago", recojo.pedidoMetodoPago)
+                putExtra("fechaRecojoPedidoMotorizado", recojo.fechaRecojoPedidoMotorizado?.seconds)
+                Log.d("MiAdapter", "Fecha de recojo: ${recojo.fechaRecojoPedidoMotorizado}")
+                putExtra("fechaEntregaPedidoMotorizado", recojo.fechaEntregaPedidoMotorizado?.seconds)
             }
             context.startActivity(intent)
         }

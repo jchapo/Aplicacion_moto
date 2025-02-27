@@ -52,8 +52,22 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val clienteNombre = intent.getStringExtra("clienteNombre")
         val proveedorNombre = intent.getStringExtra("proveedorNombre")
         val pedidoCantidadCobrar = intent.getStringExtra("pedidoCantidadCobrar")
-        val fechaRecojoPedidoMotorizado = intent.getStringExtra("fechaRecojoPedidoMotorizado")
-        val fechaEntregaPedidoMotorizado = intent.getStringExtra("fechaEntregaPedidoMotorizado")
+        val fechaRecojoTimestamp = intent.getLongExtra("fechaRecojoPedidoMotorizado", -1)
+
+        val fechaRecojoPedidoMotorizado: Timestamp? = if (fechaRecojoTimestamp != -1L) {
+            Timestamp(fechaRecojoTimestamp, 0) // Convertimos de segundos a Timestamp
+        } else {
+            null
+        }
+        Log.d("DetalleRecojoActivity", "Fecha de recogida recibida: $fechaRecojoPedidoMotorizado")
+
+        val fechaEntregaTimestamp = intent.getLongExtra("fechaEntregaPedidoMotorizado", -1)
+
+        val fechaEntregaPedidoMotorizado: Timestamp? = if (fechaEntregaTimestamp != -1L) {
+            Timestamp(fechaEntregaTimestamp, 0) // Convertimos de segundos a Timestamp
+        } else {
+            null
+        }
 
         val tvCliente = findViewById<TextView>(R.id.tvDetalleCliente)
         val tvProveedor = findViewById<TextView>(R.id.tvDetalleProveedor)
@@ -88,16 +102,19 @@ class DetalleRecojoActivity : AppCompatActivity() {
         // Inicializamos los textos con los valores del intent
         tvCliente.text = clienteNombre
         tvProveedor.text = proveedorNombre
-        tvPrecio.text = "Monto a cobrar: S/ $pedidoCantidadCobrar"
+        tvPrecio.text = "Cobrar: S/ $pedidoCantidadCobrar"
 
         // Ocultar el LinearLayout si fechaRecojoPedidoMotorizado es null o está vacío
-        if (fechaRecojoPedidoMotorizado.isNullOrEmpty()) {
+        if (fechaRecojoPedidoMotorizado == null) {
             tvPrecio.text = "RECOJO PENDIENTE"
             tvCardCliente.visibility = View.GONE
             val typedValue = TypedValue()
             theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
             btnCamara.setBackgroundColor(typedValue.data)
             btnCheck.isEnabled = false  // Deshabilita el botón
+        } else {
+            tvPrecio.backgroundTintList = ContextCompat.getColorStateList(this, R.color.teal_200)
+            tvPrecio.textSize = 20f
         }
 
         db = FirebaseFirestore.getInstance()
