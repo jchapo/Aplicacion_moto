@@ -37,8 +37,11 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private lateinit var btnCamara: ImageButton
     private lateinit var btnCheck: ImageButton
     private lateinit var imagenRecojo: ImageView
+    private lateinit var imagenEntrega: ImageView
     private var seRecogioImagen: Boolean = false
+    private var seEntregoImagen: Boolean = false
     private var seSubioRecogioImagen: Boolean = false
+    private var seSubioEntregaImagen: Boolean = false
 
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
@@ -85,6 +88,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val btnMapsRecojo = findViewById<ImageButton>(R.id.btnMapsProveedor)
 
         imagenRecojo = findViewById(R.id.imagenRecojo)
+        imagenEntrega = findViewById(R.id.imagenEntrega)
         btnCheck = findViewById(R.id.btnCheck)
 
         btnCamara.setOnClickListener {
@@ -93,11 +97,12 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
         btnCheck.setOnClickListener {
             if (item?.fechaRecojoPedidoMotorizado == null && seSubioRecogioImagen) {
-                recogerPedido()
-            } else {
-                Toast.makeText(this, "Asegúrate de haber tomado y subido la foto de recogida.", Toast.LENGTH_SHORT).show()
+                actualizarEstadoPedido(1)
+            } else if (item?.fechaRecojoPedidoMotorizado != null && seSubioEntregaImagen) {
+                actualizarEstadoPedido(2)
             }
         }
+
 
         // Inicializamos los textos con los valores del intent
         tvCliente.text = clienteNombre
@@ -112,9 +117,13 @@ class DetalleRecojoActivity : AppCompatActivity() {
             theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
             btnCamara.setBackgroundColor(typedValue.data)
             btnCheck.isEnabled = false  // Deshabilita el botón
-        } else {
+        } else if (fechaEntregaPedidoMotorizado == null) {
             tvPrecio.backgroundTintList = ContextCompat.getColorStateList(this, R.color.teal_200)
             tvPrecio.textSize = 20f
+            val typedValue = TypedValue()
+            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+            btnCamara.setBackgroundColor(typedValue.data)
+            btnCheck.isEnabled = false  // Deshabilita el botón
         }
 
         db = FirebaseFirestore.getInstance()
@@ -169,12 +178,21 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 seSubioRecogioImagen = false
                 seRecogioImagen = true
                 imagenRecojo.setImageBitmap(imageBitmap)
-                subirFotosRecojo(imageBitmap)
+                subirFotosFirestore(imageBitmap,1)
             } else {
-                Log.e("Cámara", "No se recibió imagen desde la cámara.")
+                Log.e("Cámara", "No se recibió imagen recojo desde la cámara.")
             }
-        } else {
-            Log.e("Cámara", "Captura de imagen cancelada o fallida.")
+        } else if (result.resultCode == RESULT_OK && item?.fechaRecojoPedidoMotorizado != null) {
+            val data: Intent? = result.data
+            val imageBitmap = data?.extras?.get("data") as? Bitmap
+            if (imageBitmap != null) {
+                seSubioEntregaImagen = false
+                seEntregoImagen = true
+                imagenEntrega.setImageBitmap(imageBitmap)
+                subirFotosFirestore(imageBitmap,2)
+            } else {
+                Log.e("Cámara", "No se recibió imagen entrega desde la cámara.")
+            }
         }
     }
 
@@ -343,9 +361,12 @@ class DetalleRecojoActivity : AppCompatActivity() {
         }
     }
 
-    private fun subirFotosRecojo(imageBitmap: Bitmap) {
+    private fun subirFotosFirestore(imageBitmap: Bitmap, tipo: Int) {
         val storageRef = Firebase.storage.reference
         val pedidoId = item?.id ?: return
+
+        val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
+        val collectionName = "recojos"
 
         // Comprimir imagen principal
         val baos = ByteArrayOutputStream()
@@ -353,31 +374,29 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val imageData = baos.toByteArray()
 
         // Crear thumbnail (imagen pequeña)
-        val thumbnailBitmap = imageBitmap
         val baosThumbnail = ByteArrayOutputStream()
-        thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baosThumbnail)
+        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baosThumbnail)
         val thumbnailData = baosThumbnail.toByteArray()
 
         // Subir imagen principal
-        val imageRef = storageRef.child("fotospedidos/$pedidoId/recojo.jpg")
-        val thumbnailRef = storageRef.child("fotospedidos/$pedidoId/recojo_thumbnail.jpg")
+        val imageRef = storageRef.child("fotospedidos/$pedidoId/$tipoOperacion.jpg")
+        val thumbnailRef = storageRef.child("fotospedidos/$pedidoId/${tipoOperacion}_thumbnail.jpg")
 
         imageRef.putBytes(imageData).addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { imageUrl ->
-                // Guardar URL en Firestore
-                Firebase.firestore.collection("recojos").document(pedidoId)
-                    .update("pedidoFotoRecojo", imageUrl.toString())
+                Firebase.firestore.collection(collectionName).document(pedidoId)
+                    .update("pedidoFoto$tipoOperacion", imageUrl.toString())
             }
         }.addOnFailureListener {
-            Log.e("Firebase", "Error al subir imagen de recojo")
-            Toast.makeText(this, "Error al subir la imagen de recojo", Toast.LENGTH_SHORT).show()
+            Log.e("Firebase", "Error al subir imagen de $tipoOperacion")
+            Toast.makeText(this, "Error al subir la imagen de $tipoOperacion", Toast.LENGTH_SHORT).show()
         }
 
         // Subir thumbnail
         thumbnailRef.putBytes(thumbnailData).addOnSuccessListener {
             thumbnailRef.downloadUrl.addOnSuccessListener { thumbnailUrl ->
-                Firebase.firestore.collection("recojos").document(pedidoId)
-                    .update("thumbnailFotoRecojo", thumbnailUrl.toString())
+                Firebase.firestore.collection(collectionName).document(pedidoId)
+                    .update("thumbnailFoto$tipoOperacion", thumbnailUrl.toString())
 
                 // Activar botones después de subir la imagen
                 btnCamara.background = null
@@ -385,28 +404,35 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
                 btnCheck.setBackgroundColor(typedValue.data)
                 btnCheck.isEnabled = true
-                seSubioRecogioImagen = true
+                if (tipo == 1) seSubioRecogioImagen = true else seSubioEntregaImagen = true
             }
         }.addOnFailureListener {
-            Log.e("Firebase", "Error al subir thumbnail de recojo")
-            Toast.makeText(this, "Error al subir el thumbnail de recojo", Toast.LENGTH_SHORT).show()
+            Log.e("Firebase", "Error al subir thumbnail de $tipoOperacion")
+            Toast.makeText(this, "Error al subir el thumbnail de $tipoOperacion", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun recogerPedido() {
-        val pedidoId = item?.id ?: return
-        val fechaRecojo = Timestamp.now()
 
-        val db = FirebaseFirestore.getInstance()
-        db.collection("recojos").document(pedidoId)
-            .update("fechaRecojoPedidoMotorizado", fechaRecojo)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Pedido recogido con éxito.", Toast.LENGTH_SHORT).show()
-                finish() // Cierra la actividad y vuelve a la anterior
-            }
-            .addOnFailureListener { e ->
-                Log.e("Firestore", "Error al actualizar la fecha de recogida", e)
-                Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
-            }
+        private fun actualizarEstadoPedido(tipo: Int) {
+            val pedidoId = item?.id ?: return
+            val fecha = Timestamp.now()
+
+            val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
+            val campoFecha = if (tipo == 1) "fechaRecojoPedidoMotorizado" else "fechaEntregaPedidoMotorizado"
+            val collectionName = "recojos"
+
+            val db = FirebaseFirestore.getInstance()
+            db.collection(collectionName).document(pedidoId)
+                .update(campoFecha, fecha)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Pedido de $tipoOperacion actualizado con éxito.", Toast.LENGTH_SHORT).show()
+                    finish() // Cierra la actividad y vuelve a la anterior
+                }
+                .addOnFailureListener { e ->
+                    Log.e("Firestore", "Error al actualizar la fecha de $tipoOperacion", e)
+                    Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
+                }
+        }
+
+
     }
-}

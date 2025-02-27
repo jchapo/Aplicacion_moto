@@ -456,7 +456,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun centrarMapaConUbicacion(ubicacionUsuario: LatLng) {
-        if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty() && mMap != null) {
+        if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty() && puntosRecojoListaEspecial.isEmpty() && mMap != null) {
             // Si no hay marcadores, centrar solo en la ubicación del usuario
             mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 15f))
             return
