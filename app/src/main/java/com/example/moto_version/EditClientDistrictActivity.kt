@@ -128,17 +128,21 @@ class EditClientDistrictActivity : AppCompatActivity() {
 
     private fun setupDistritosSpinner() {
         // Lista de distritos de Lima
-        val distritos = arrayOf("",
-            "Ancón", "Ate", "Barranco", "Breña", "Carabayllo (Lima)", "Chaclacayo", "Chorrillos", "Cieneguilla",
-            "Comas (Lima)", "El Agustino", "Independencia", "Jesús María", "La Molina", "La Victoria", "Lima",
-            "Lince", "Los Olivos", "Lurigancho", "Lurín", "Magdalena del Mar", "Miraflores", "Pachacámac",
-            "Pucusana", "Pueblo Libre", "Puente Piedra (Lima)", "Punta Hermosa", "Punta Negra", "Rímac",
-            "San Bartolo", "San Borja", "San Isidro", "San Juan de Lurigancho", "San Juan de Miraflores",
-            "San Luis", "San Martín de Porres", "San Miguel", "Santa Anita", "Santa Clara (Ate, Lima)",
-            "Santa María del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo",
-            "Ventanilla (Callao)", "Oquendo (Callao)",
-            "Villa El Salvador (Lima)", "Villa María del Triunfo (Lima)"
+        val distritos = arrayOf(
+            "",
+            "Ate (Lima)", "Barranco (Lima)", "Breña (Lima)", "Carabayllo (Lima)", "Chaclacayo (Lima)", "Chorrillos (Lima)",
+            "Comas (Lima)", "Cercado de Lima (Lima)", "El Agustino (Lima)", "Huachipa (Ate, Lima)", "Independencia (Lima)",
+            "Jesús María (Lima)", "La Molina (Lima)", "La Victoria (Lima)", "Lince (Lima)", "Los Olivos (Lima)",
+            "Lurín (Lima)", "Magdalena del Mar (Lima)", "Mi Perú (Callao)", "Oquendo (Callao)", "Pueblo Libre (Lima)",
+            "Puente Piedra (Lima)", "Rímac (Lima)", "San Borja (Lima)", "San Isidro (Lima)", "San Juan de Lurigancho (Lima)",
+            "San Juan de Miraflores (Lima)", "San Luis (Lima)", "San Martín de Porres (Lima)", "San Miguel (Lima)",
+            "Santa Anita (Lima)", "Santa Clara (Ate, Lima)", "Santa Rosa (Callao)", "Santiago de Surco (Lima)",
+            "Surco (Santiago de Surco, Lima)", "Surquillo (Lima)", "Villa El Salvador (Lima)", "Villa María del Triunfo (Lima)",
+            "Bellavista (Callao)", "Callao (Callao)", "Carmen de la Legua (Callao)", "La Perla (Callao)", "La Punta (Callao)",
+            "Ventanilla (Callao)"
         )
+
+
 
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, distritos)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -302,6 +306,8 @@ class EditClientDistrictActivity : AppCompatActivity() {
             null // Retorna null en caso de excepción
         }
     }
+
+
     private fun guardarCambios() {
         val clienteDistrito = spinnerDistritos.selectedItem.toString()
         val comisionTarifa = tvComisionTarifa.text.toString().toDoubleOrNull()
