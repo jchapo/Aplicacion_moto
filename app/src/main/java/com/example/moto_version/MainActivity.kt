@@ -31,14 +31,24 @@ import androidx.core.app.ActivityCompat
 import android.location.Location
 import android.location.LocationManager
 import android.content.Context
+import android.net.Uri
 import android.provider.Settings
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.Marker
 import com.google.firebase.Timestamp
 import java.util.Calendar
+import com.google.maps.android.data.kml.KmlLayer
+import kotlinx.coroutines.CoroutineScope
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
 
 private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
 private const val REQUEST_LOCATION_SETTINGS = 1002
@@ -47,8 +57,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: MiAdapter
-    private lateinit var indUno: TextView
-    private lateinit var indDos: TextView
     private var mMap: GoogleMap? = null
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
@@ -59,10 +67,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var rutaMotorizado: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoPedido(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?)
+    data class PuntoPedido(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String)
     private val puntosRecojoLista = mutableListOf<PuntoPedido>()
     private val puntosRecojoListaEspecial = mutableListOf<PuntoPedido>()
     private val puntosEntregaLista = mutableListOf<PuntoPedido>()
+    private var kmlLayer: KmlLayer? = null
+    private val marcadores = mutableListOf<Marker>() // Lista para guardar referencia a todos los marcadores
+
 
 
 
@@ -144,13 +155,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     ubicacionDisponible = false
                     // No mostramos el diálogo aquí para evitar mostrarlo cada vez que se reanude la actividad
                     // Solo centramos el mapa con los marcadores
-                    centrarMapaSinUbicacion()
+                    //centrarMapaSinUbicacion()
+                    mostrarDialogoActivarUbicacion()
                 }
             } else {
                 // No tenemos permisos de ubicación
                 Log.d("MainActivity", "onResume: Sin permisos de ubicación")
                 ubicacionDisponible = false
-                centrarMapaSinUbicacion()
+                activarUbicacionUsuario()
             }
         }
     }
@@ -169,17 +181,48 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Obtener referencias a los TextView
         val indUno: TextView = findViewById(R.id.indUno)
+        val textUno: TextView = findViewById(R.id.textUno)
         val indDos: TextView = findViewById(R.id.indDos)
+        val textDos: TextView = findViewById(R.id.textDos)
+
+        val tarjetaVacia: TextView = findViewById(R.id.tarjetaVacia)
 
         // Asignar los textos
         indUno.text = "$cantidadRecojosTotal"
         indDos.text = "$cantidadEntregasTotal"
 
-        // Ocultar cardIndUno si no hay recojos
-        cardIndUno.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
+        Log.e("MainActivity", "Cantidad de recojos: $cantidadRecojosTotal")
+        Log.e("MainActivity", "Cantidad de entregas: $cantidadEntregasTotal")
 
-        // Ocultar cardIndDos si no hay entregas
+        textUno.text = if (indUno.text.equals("1")) "Recojo" else "Recojos"
+        textDos.text = if (indDos.text.equals("1")) "Entrega" else "Entregas"
+
+        cardIndUno.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
         cardIndDos.visibility = if (cantidadEntregasTotal == 0) View.GONE else View.VISIBLE
+
+        val horaActual = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+
+        if (horaActual < 13) {
+            // Antes de las 13 horas
+            if (cantidadRecojosTotal == 0) {
+                tarjetaVacia.visibility = View.VISIBLE
+                recyclerView.visibility = View.GONE
+                tarjetaVacia.text = "No hay recojos pendientes"
+            } else {
+                tarjetaVacia.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+            }
+        } else {
+            // A partir de las 13 horas
+            if (cantidadRecojosTotal == 0 && cantidadEntregasTotal == 0) {
+                tarjetaVacia.visibility = View.VISIBLE
+                recyclerView.visibility = View.GONE
+                tarjetaVacia.text = "No hay recojos pendientes"
+            } else {
+                tarjetaVacia.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+            }
+        }
     }
 
 
@@ -188,7 +231,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             Log.e("Firestore", "Error: rutaMotorizado está vacío")
             return
         }
-
+        // Obtener la hora actual del dispositivo
+        val calendar = Calendar.getInstance()
+        val horaActual = calendar.get(Calendar.HOUR_OF_DAY)
         // Remover listener anterior si existe
         recojosListener?.remove()
         entregasListener?.remove()
@@ -208,7 +253,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 val documentosFiltrados = snapshots.documents.filter {
-                    it.get("fechaRecojoPedidoMotorizado") == null
+                    it.get("fechaRecojoPedidoMotorizado") == null && it.get("fechaAnulacionPedido") == null
                 }
 
                 puntosRecojoLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
@@ -229,82 +274,95 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
+                        puntosRecojoLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, ""))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
                 }
 
-
-
-                // Indicar que los datos están cargados
-                datosCargados = true
-
-                // Agregar marcadores y centrar el mapa solo si ya está inicializado
-                mMap?.let {
-                    actualizarMapa()
+                if (horaActual >= 13) {
+                    datosCargados = true
+                    mMap?.let {
+                        actualizarMapa()
+                    }
                 }
             }
 
-        // Obtener la hora actual del dispositivo
-        val calendar = Calendar.getInstance()
-        val horaActual = calendar.get(Calendar.HOUR_OF_DAY)
+        if (horaActual >= 13) {
 
-        entregasListener = db.collection("recojos")
-            .whereEqualTo("motorizadoEntrega", rutaMotorizado) // Solo un filtro en Firestore
-            .addSnapshotListener { snapshots, error ->
-                if (error != null) {
-                    Log.e("Firestore", "Error al obtener documentos", error)
-                    return@addSnapshotListener
-                }
+            entregasListener = db.collection("recojos")
+                .whereEqualTo("motorizadoEntrega", rutaMotorizado) // Solo un filtro en Firestore
+                .addSnapshotListener { snapshots, error ->
+                    if (error != null) {
+                        Log.e("Firestore", "Error al obtener documentos", error)
+                        return@addSnapshotListener
+                    }
 
-                if (snapshots == null) {
-                    Log.d("Firestore", "Snapshot nulo")
-                    return@addSnapshotListener
-                }
+                    if (snapshots == null) {
+                        Log.d("Firestore", "Snapshot nulo")
+                        return@addSnapshotListener
+                    }
 
-                val documentosFiltrados = snapshots.documents.filter {
-                    it.get("fechaRecojoPedidoMotorizado") != null &&
-                            it.get("fechaEntregaPedidoMotorizado") == null
-                }
+                    val documentosFiltrados = snapshots.documents.filter {
+                        it.get("fechaRecojoPedidoMotorizado") != null && it.get("fechaEntregaPedidoMotorizado") == null && it.get("fechaAnulacionPedido") == null
+                    }
 
-                puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
-                puntosRecojoListaEspecial.clear() // Limpiar lista antes de agregar nuevas coordenadas
+                    puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
+                    puntosRecojoListaEspecial.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
-                documentosFiltrados.forEach { doc ->
-                    val id = doc.id
-                    val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
-                    val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
-                    val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
-                    val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
-                    val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
-                    val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
-                    val motorizadoRecojo = doc.getString("motorizadoRecojo")
+                    documentosFiltrados.forEach { doc ->
+                        val id = doc.id
+                        val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
+                        val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
+                        val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
+                        val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
+                        val fechaEntregaPedidoMotorizado =
+                            doc.getTimestamp("fechaEntregaPedidoMotorizado")
+                        val fechaRecojoPedidoMotorizado =
+                            doc.getTimestamp("fechaRecojoPedidoMotorizado")
+                        val thumbnailFotoRecojo = doc.getString("thumbnailFotoRecojo") ?: "Error"
 
-                    // Obtener coordenadas
-                    val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
-                    val latitud = coordenadas?.get("lat") as? Double
-                    val longitud = coordenadas?.get("lng") as? Double
+                        // Obtener coordenadas
+                        val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
+                        val latitud = coordenadas?.get("lat") as? Double
+                        val longitud = coordenadas?.get("lng") as? Double
 
-                    if (latitud != null && longitud != null) {
-                        val ubicacion = LatLng(latitud, longitud)
-                        if (motorizadoRecojo == rutaMotorizado) {
+                        if (latitud != null && longitud != null) {
+                            val ubicacion = LatLng(latitud, longitud)
+                            puntosEntregaLista.add(
+                                PuntoPedido(
+                                    id,
+                                    ubicacion,
+                                    clienteNombre,
+                                    proveedorNombre,
+                                    pedidoCantidadCobrar,
+                                    pedidoMetodoPago,
+                                    fechaEntregaPedidoMotorizado,
+                                    fechaRecojoPedidoMotorizado,
+                                    thumbnailFotoRecojo
+                                )
+
+                            )
+                            Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
+
+                            /*if (motorizadoRecojo == rutaMotorizado) {
                             Log.d("Firestore", "Pedido recogido y listo para entrega: $id")
                             puntosRecojoListaEspecial.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, null, fechaRecojoPedidoMotorizado))
                         } else {
                             puntosEntregaLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
                             Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
+                        }*/
                         }
                     }
-                }
 
-                // Indicar que los datos están cargados
-                datosCargados = true
+                    // Indicar que los datos están cargados
+                    datosCargados = true
 
-                // Agregar marcadores y centrar el mapa solo si ya está inicializado
-                mMap?.let {
-                    actualizarMapa()
+                    // Agregar marcadores y centrar el mapa solo si ya está inicializado
+                    mMap?.let {
+                        actualizarMapa()
+                    }
                 }
-            }
+        }
     }
 
 
@@ -320,126 +378,118 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         solicitarPermisoUbicacion()
     }
 
-    // Función para actualizar el mapa con marcadores y centrado
+    private fun cargarMapaKML() {
+        if (!mapaListo) return
+
+        // Usar coroutine para la operación de red
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // URL de KML - asegúrate de que sea accesible públicamente
+                val kmlUrl = URL("https://www.google.com/maps/d/kml?mid=13U820BGFZW20wbx4NE7e56AuJGGvzzM&forcekml=1")
+                val connection = kmlUrl.openConnection() as HttpURLConnection
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+
+                val inputStream = connection.inputStream
+                val kmlData = inputStream.bufferedReader().use { it.readText() }
+
+                // Verificar si el KML contiene datos
+                if (kmlData.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(applicationContext, "El archivo KML está vacío", Toast.LENGTH_LONG).show()
+                    }
+                    return@launch
+                }
+
+                // Convertir el texto de vuelta a InputStream para KmlLayer
+                val kmlInputStream = kmlData.byteInputStream()
+
+                withContext(Dispatchers.Main) {
+                    try {
+                        // Eliminar la capa KML anterior si existe
+                        kmlLayer?.removeLayerFromMap()
+
+                        // Crear nueva capa KML
+                        kmlLayer = KmlLayer(mMap, kmlInputStream, applicationContext)
+                        kmlLayer?.addLayerToMap()
+
+                        // Log para confirmar que la capa se añadió correctamente
+                        Log.d("MainActivity", "KML cargado correctamente")
+
+                        // Verificar si hay contenedores en el KML
+                        val containers = kmlLayer?.containers
+                        if (containers != null) {
+                            for (container in containers) {
+                                Log.d("MainActivity", "Container encontrado: ${container.hasProperties()}")
+                            }
+                        } else {
+                            Log.d("MainActivity", "No se encontraron containers en el KML")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error al procesar KML", e)
+                        Toast.makeText(applicationContext, "Error al procesar el mapa KML: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Log.e("MainActivity", "Error al cargar KML", e)
+                    Toast.makeText(applicationContext, "Error al cargar el mapa: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
     private fun actualizarMapa() {
+        limpiarSoloMarcadores()
+        cargarMapaKML()
         agregarMarcadores()
         centrarMapa()
     }
-
-    private fun activarUbicacionUsuario() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            mMap?.isMyLocationEnabled = true
-
-            // Verificar si el servicio de ubicación está activado
-            val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
-                !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                // Si la ubicación está desactivada, mostrar diálogo para activarla
-                mostrarDialogoActivarUbicacion()
-            } else {
-                // La ubicación está activada, intentar obtener la posición actual
-                ubicacionDisponible = true
-                obtenerUbicacionActual()
-            }
-        }
-    }
-
-    private fun mostrarDialogoActivarUbicacion() {
-        AlertDialog.Builder(this)
-            .setTitle("Ubicación desactivada")
-            .setMessage("Para mostrar tu ubicación en el mapa, necesitas activar el servicio de ubicación")
-            .setPositiveButton("Configuración") { _, _ ->
-                // Abrir configuración de ubicación
-                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivityForResult(intent, REQUEST_LOCATION_SETTINGS)
-            }
-            .setNegativeButton("Cancelar") { dialog, _ ->
-                dialog.dismiss()
-                // Continuar sin ubicación
-                ubicacionDisponible = false
-                centrarMapaSinUbicacion()
-            }
-            .setCancelable(false)
-            .show()
-    }
-
-    private fun obtenerUbicacionActual() {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-        try {
-            // Intentar obtener la última ubicación conocida
-            val lastKnownLocation = if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                // Intentar primero con GPS por mayor precisión
-                var location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-
-                // Si no hay ubicación de GPS, intentar con NETWORK
-                if (location == null) {
-                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                }
-
-                // Si aún no hay ubicación, intentar con PASSIVE (cualquier proveedor)
-                if (location == null) {
-                    location = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
-                }
-
-                location
-            } else {
-                null
-            }
-
-            if (lastKnownLocation != null) {
-                Log.d("MainActivity", "Ubicación obtenida: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
-                val ubicacionUsuario = LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
-                centrarMapaConUbicacion(ubicacionUsuario)
-                actualizarListaOrdenada(ubicacionUsuario)
-            } else {
-                Log.d("MainActivity", "No se pudo obtener la ubicación actual")
-                // Si no hay ubicación disponible, centrar solo con marcadores
-                ubicacionDisponible = false
-                centrarMapaSinUbicacion()
-            }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Error al obtener ubicación", e)
-            ubicacionDisponible = false
+    private fun centrarMapa() {
+        if (ubicacionDisponible) {
+            obtenerUbicacionActual()
+        } else {
             centrarMapaSinUbicacion()
         }
     }
-
     private fun agregarMarcadores() {
         mMap?.let { map ->
-            map.clear() // Mover dentro del let para evitar llamada innecesaria si mMap es null
+            // NO usar map.clear() aquí porque eliminaría el KML
 
             val boundsBuilder = LatLngBounds.Builder()
 
             // Agregar marcadores de recojo con color AZUL
             for (punto in puntosRecojoLista) {
-                map.addMarker(
+                val marker = map.addMarker(
                     MarkerOptions()
                         .position(punto.ubicacion)
                         .title("Recojo: ${punto.proveedorNombre}")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
                 )
+                marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
             }
 
             // Agregar marcadores de entrega con color ROJO
             for (punto in puntosEntregaLista) {
-                map.addMarker(
+                val marker = map.addMarker(
                     MarkerOptions()
                         .position(punto.ubicacion)
                         .title("Entrega: ${punto.clienteNombre}")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                 )
+                marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
             }
 
             for (punto in puntosRecojoListaEspecial) {
-                map.addMarker(
+                val marker = map.addMarker(
                     MarkerOptions()
                         .position(punto.ubicacion)
                         .title("Entrega: ${punto.clienteNombre}")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                 )
+                marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
             }
 
@@ -451,46 +501,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
-
-    private fun showToast(mensaje: String) {
-        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun escucharCambiosEnUsuario() {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            usuarioListener = db.collection("usuarios")
-                .whereEqualTo("email", user.email)
-                .addSnapshotListener { snapshots, error ->
-                    if (error != null) {
-                        Log.e("Firestore", "Error al escuchar cambios", error)
-                        return@addSnapshotListener
-                    }
-
-                    // Si el documento del usuario no existe, cerrar sesión
-                    if (snapshots == null || snapshots.isEmpty) {
-                        cerrarSesion()
-                    }
-                }
-        }
-    }
-
-    private fun cerrarSesion() {
-        FirebaseAuth.getInstance().signOut()  // Cerrar sesión en Firebase
-        val intent = Intent(this, LoginActivity::class.java)  // Redirigir a la pantalla de login
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK  // Eliminar historial de actividades
-        startActivity(intent)
-        finish()  // Cerrar la actividad actual
-    }
-
-    private fun centrarMapa() {
-        if (ubicacionDisponible) {
-            obtenerUbicacionActual()
-        } else {
-            centrarMapaSinUbicacion()
-        }
-    }
-
     private fun centrarMapaConUbicacion(ubicacionUsuario: LatLng) {
         if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty() && puntosRecojoListaEspecial.isEmpty() && mMap != null) {
             // Si no hay marcadores, centrar solo en la ubicación del usuario
@@ -542,7 +552,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 12f))
         }
     }
-
     private fun centrarMapaSinUbicacion() {
         if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty()) {
             Log.d("MainActivity", "No hay coordenadas para centrar el mapa")
@@ -604,11 +613,145 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }, 300)
         }
     }
+    private fun limpiarSoloMarcadores() {
+        // Eliminar todos los marcadores guardados en la lista
+        for (marker in marcadores) {
+            marker.remove()
+        }
+        marcadores.clear()
+    }
+
+    private fun activarUbicacionUsuario() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            mMap?.isMyLocationEnabled = true
+
+            // Verificar si el servicio de ubicación está activado
+            val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
+                !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                // Si la ubicación está desactivada, mostrar diálogo para activarla
+                mostrarDialogoActivarUbicacion()
+            } else {
+                // La ubicación está activada, intentar obtener la posición actual
+                ubicacionDisponible = true
+                obtenerUbicacionActual()
+            }
+        }
+    }
+
+    private fun mostrarDialogoActivarUbicacion() {
+        AlertDialog.Builder(this)
+            .setTitle("Ubicación desactivada")
+            .setMessage("Para mostrar tu ubicación en el mapa, necesitas activar el servicio de ubicación")
+            .setPositiveButton("Configuración") { _, _ ->
+                // Abrir configuración de ubicación
+                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivityForResult(intent, REQUEST_LOCATION_SETTINGS)
+            }
+            .setNegativeButton("Cancelar") { dialog, _ ->
+                dialog.dismiss()
+                // Continuar sin ubicación
+                ubicacionDisponible = false
+                //centrarMapaSinUbicacion()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun obtenerUbicacionActual() {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        try {
+            // Intentar obtener la última ubicación conocida
+            val lastKnownLocation = if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                // Intentar primero con GPS por mayor precisión
+                var location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+
+                // Si no hay ubicación de GPS, intentar con NETWORK
+                if (location == null) {
+                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                }
+
+                // Si aún no hay ubicación, intentar con PASSIVE (cualquier proveedor)
+                if (location == null) {
+                    location = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
+                }
+
+                location
+            } else {
+                null
+            }
+
+            if (lastKnownLocation != null) {
+                //Log.d("MainActivity", "Ubicación obtenida: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
+                val ubicacionUsuario = LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
+                centrarMapaConUbicacion(ubicacionUsuario)
+                actualizarListaOrdenada(ubicacionUsuario)
+            } else {
+                Log.d("MainActivity", "No se pudo obtener la ubicación actual")
+                // Si no hay ubicación disponible, centrar solo con marcadores
+                ubicacionDisponible = false
+                centrarMapaSinUbicacion()
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error al obtener ubicación", e)
+            ubicacionDisponible = false
+            centrarMapaSinUbicacion()
+        }
+    }
+
+
+    private fun showToast(mensaje: String) {
+        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun escucharCambiosEnUsuario() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            usuarioListener = db.collection("usuarios")
+                .whereEqualTo("email", user.email)
+                .addSnapshotListener { snapshots, error ->
+                    if (error != null) {
+                        Log.e("Firestore", "Error al escuchar cambios", error)
+                        return@addSnapshotListener
+                    }
+
+                    // Si el documento del usuario no existe, cerrar sesión
+                    if (snapshots == null || snapshots.isEmpty) {
+                        cerrarSesion()
+                    }
+                }
+        }
+    }
+
+    private fun cerrarSesion() {
+        FirebaseAuth.getInstance().signOut()  // Cerrar sesión en Firebase
+        val intent = Intent(this, LoginActivity::class.java)  // Redirigir a la pantalla de login
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK  // Eliminar historial de actividades
+        startActivity(intent)
+        finish()  // Cerrar la actividad actual
+    }
+
+
+
 
     private fun solicitarPermisoUbicacion() {
+        val permisosNecesarios = mutableListOf<String>()
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+            permisosNecesarios.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            permisosNecesarios.add(Manifest.permission.CALL_PHONE)
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            permisosNecesarios.add(Manifest.permission.CAMERA)
+        }
+
+        if (permisosNecesarios.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permisosNecesarios.toTypedArray(), LOCATION_PERMISSION_REQUEST_CODE)
         } else {
+            // Todos los permisos ya fueron concedidos
             activarUbicacionUsuario()
         }
     }
@@ -621,9 +764,31 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             } else {
                 ubicacionDisponible = false
                 showToast("Permiso de ubicación denegado")
-                centrarMapaSinUbicacion()
+
+                // Verificar si el usuario seleccionó "No volver a preguntar"
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    mostrarDialogoPermisoDenegado()
+                } else {
+                    solicitarPermisoUbicacion()
+                }
             }
         }
+    }
+
+    private fun mostrarDialogoPermisoDenegado() {
+        AlertDialog.Builder(this)
+            .setTitle("Permiso necesario")
+            .setMessage("Para usar el mapa, habilita el permiso de ubicación en la configuración.")
+            .setPositiveButton("Ir a configuración") { _, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.parse("package:com.example.moto_version")
+                startActivity(intent)
+            }
+            .setNegativeButton("Cancelar") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -681,7 +846,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         Log.e("listaCombinada", "listaCombinada1: $listaCombinada")
 
-        // Solo después de las 13 horas, agregamos los puntos de entrega
         if (horaActual >= 13) {
             val puntosEntregaConDistancia = puntosEntregaLista.map { punto ->
                 val resultado = FloatArray(1)
@@ -705,7 +869,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Convertimos a la lista final para el adaptador
         val listaFinal = listaOrdenada.map { (punto, _) ->
-            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago, punto.fechaEntregaPedidoMotorizado, punto.fechaRecojoPedidoMotorizado)
+            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago, punto.fechaEntregaPedidoMotorizado, punto.fechaRecojoPedidoMotorizado, punto.thumbnailFotoRecojo)
         }
 
         // Actualizamos el adaptador con la lista final
@@ -719,4 +883,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         recojosListener?.remove() // Añadir esta línea
         entregasListener?.remove()
     }
+
+
 }

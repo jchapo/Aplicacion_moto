@@ -9,5 +9,6 @@ data class Recojo(
     val pedidoCantidadCobrar: String = "0.00",
     val pedidoMetodoPago: String = "",
     val fechaEntregaPedidoMotorizado: Timestamp? = null,
-    val fechaRecojoPedidoMotorizado: Timestamp? = null
+    val fechaRecojoPedidoMotorizado: Timestamp? = null,
+    val thumbnailFotoRecojo: String = ""
     )

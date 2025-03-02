@@ -14,7 +14,11 @@ import com.example.moto_version.models.Item
 import com.google.firebase.firestore.FirebaseFirestore
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.os.Build
 import android.provider.MediaStore
 import android.util.TypedValue
 import android.view.View
@@ -22,12 +26,16 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import androidx.exifinterface.media.ExifInterface
 import com.bumptech.glide.Glide
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import java.io.ByteArrayOutputStream
 import com.google.firebase.Timestamp
+import java.io.File
+import java.io.InputStream
 
 
 class DetalleRecojoActivity : AppCompatActivity() {
@@ -161,6 +169,13 @@ class DetalleRecojoActivity : AppCompatActivity() {
                                 .into(imagenRecojo)
                         }
 
+                        it.thumbnailFotoEntrega?.let { imageUrl ->
+                            // Si no es null, se carga la imagen en imagenRecojo
+                            Glide.with(this)
+                                .load(imageUrl)
+                                .into(imagenEntrega)
+                        }
+
                         // Se actualizan los botones cuando los datos ya están cargados
                         actualizarBotonesLlamada(
                             btnTelefonoCliente, btnTelefonoProveedor,
@@ -192,31 +207,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         }
     }
 
-    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK && item?.fechaRecojoPedidoMotorizado == null) {
-            val data: Intent? = result.data
-            val imageBitmap = data?.extras?.get("data") as? Bitmap
-            if (imageBitmap != null) {
-                seSubioRecogioImagen = false
-                seRecogioImagen = true
-                imagenRecojo.setImageBitmap(imageBitmap)
-                subirFotosFirestore(imageBitmap,1)
-            } else {
-                Log.e("Cámara", "No se recibió imagen recojo desde la cámara.")
-            }
-        } else if (result.resultCode == RESULT_OK && item?.fechaRecojoPedidoMotorizado != null) {
-            val data: Intent? = result.data
-            val imageBitmap = data?.extras?.get("data") as? Bitmap
-            if (imageBitmap != null) {
-                seSubioEntregaImagen = false
-                seEntregoImagen = true
-                imagenEntrega.setImageBitmap(imageBitmap)
-                subirFotosFirestore(imageBitmap,2)
-            } else {
-                Log.e("Cámara", "No se recibió imagen entrega desde la cámara.")
-            }
-        }
-    }
+
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -379,79 +370,296 @@ class DetalleRecojoActivity : AppCompatActivity() {
         }
     }
 
+
+    private var photoUri: Uri? = null
+    private var mainImageUploaded = false
+    private var thumbnailUploaded = false
+
     private fun abrirCamara() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
-        } else {
-            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        try {
+            val photoFile = File.createTempFile("IMG_", ".jpg", cacheDir).apply {
+                deleteOnExit()  // Se eliminará cuando la app cierre
+            }
+            photoUri = FileProvider.getUriForFile(this, "$packageName.fileprovider", photoFile)
+
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+            }
+
             cameraLauncher.launch(intent)
+        } catch (e: Exception) {
+            Log.e("Cámara", "Error al abrir la cámara: ${e.message}")
+            Toast.makeText(this, "Error al abrir la cámara", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun subirFotosFirestore(imageBitmap: Bitmap, tipo: Int) {
-        // Mostrar loader en el botón de cámara
-        btnCamara.setImageResource(R.drawable.loading_animation)
-        btnCamara.isEnabled = false  // Deshabilitar el botón mientras se está subiendo
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && photoUri != null) {
+            try {
+                // Aquí ya no buscamos el bitmap en data?.extras
+                // La imagen está guardada en photoUri
+                if (item?.fechaRecojoPedidoMotorizado == null) {
+                    // Caso de recojo
+                    seSubioRecogioImagen = false
+                    seRecogioImagen = true
+                    imagenRecojo.setImageURI(photoUri) // Mostrar la imagen capturada
+                    subirFotosFirestore(photoUri!!, 1) // Subir imagen a Firestore
+                } else {
+                    // Caso de entrega
+                    seSubioEntregaImagen = false
+                    seEntregoImagen = true
+                    imagenEntrega.setImageURI(photoUri) // Mostrar la imagen capturada
+                    subirFotosFirestore(photoUri!!, 21) // Subir imagen a Firestore
+                }
+            } catch (e: Exception) {
+                Log.e("Cámara", "Error al procesar la imagen: ${e.message}")
+                Toast.makeText(this, "Error al procesar la imagen", Toast.LENGTH_SHORT).show()
+                btnCamara.setImageResource(R.drawable.camera_solid)
+                btnCamara.isEnabled = true
+            }
+        } else {
+            Log.d("Cámara", "Operación cancelada o fallida: ${result.resultCode}")
+            btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.isEnabled = true
+        }
+    }
 
-        val storageRef = Firebase.storage.reference
+    private fun getCompressedImageAndThumbnail(
+        context: Context,
+        uri: Uri,
+        compressionQuality: Int = 60, // Similar a WhatsApp (~70%)
+        thumbnailSize: Int = 250 // Tamaño máximo del thumbnail
+    ): Pair<ByteArray, ByteArray> {
+        // Abrir el stream de la imagen original
+        val inputStream = context.contentResolver.openInputStream(uri)
+
+        // Obtener las dimensiones originales sin cargar toda la imagen
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeStream(inputStream, null, options)
+        inputStream?.close()
+
+        // Reabrir el stream para decodificar la imagen real
+        val inputStream2 = context.contentResolver.openInputStream(uri)
+
+        // Decodificar la imagen completa
+        val originalBitmap = BitmapFactory.decodeStream(inputStream2)
+        inputStream2?.close()
+
+        // Corregir la orientación de la imagen
+        val correctedBitmap = correctOrientation(context, uri, originalBitmap)
+
+        // 1. Generar la imagen comprimida (estilo WhatsApp)
+        val compressedBaos = ByteArrayOutputStream()
+        correctedBitmap.compress(Bitmap.CompressFormat.JPEG, compressionQuality, compressedBaos)
+        val compressedBytes = compressedBaos.toByteArray()
+
+        // 2. Calcular las dimensiones del thumbnail manteniendo la relación de aspecto
+        val width = correctedBitmap.width
+        val height = correctedBitmap.height
+        val ratio = width.toFloat() / height.toFloat()
+
+        val thumbnailWidth: Int
+        val thumbnailHeight: Int
+
+        if (width > height) {
+            thumbnailWidth = thumbnailSize
+            thumbnailHeight = (thumbnailSize / ratio).toInt()
+        } else {
+            thumbnailHeight = thumbnailSize
+            thumbnailWidth = (thumbnailSize * ratio).toInt()
+        }
+
+        // Crear el thumbnail redimensionando el bitmap
+        val thumbnailBitmap = Bitmap.createScaledBitmap(
+            correctedBitmap,
+            thumbnailWidth,
+            thumbnailHeight,
+            true
+        )
+
+        // Comprimir el thumbnail
+        val thumbnailBaos = ByteArrayOutputStream()
+        thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 60, thumbnailBaos)
+        val thumbnailBytes = thumbnailBaos.toByteArray()
+
+        // Liberar los recursos
+        if (thumbnailBitmap != correctedBitmap) {
+            thumbnailBitmap.recycle()
+        }
+        if (correctedBitmap != originalBitmap) {
+            correctedBitmap.recycle()
+        }
+        originalBitmap.recycle()
+
+        return Pair(compressedBytes, thumbnailBytes)
+    }
+
+    private fun correctOrientation(context: Context, uri: Uri, bitmap: Bitmap): Bitmap {
+        var inputStream: InputStream? = null
+        try {
+            inputStream = context.contentResolver.openInputStream(uri)
+            val exif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                ExifInterface(inputStream!!)
+            } else {
+                uri.path?.let { ExifInterface(it) } ?: return bitmap
+            }
+
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED
+            )
+
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    matrix.preRotate(90f)
+                    matrix.preScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    matrix.preRotate(270f)
+                    matrix.preScale(-1f, 1f)
+                }
+                else -> return bitmap
+            }
+
+            return try {
+                val rotatedBitmap = Bitmap.createBitmap(
+                    bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                )
+
+                if (rotatedBitmap != bitmap) {
+                    bitmap.recycle()
+                }
+
+                rotatedBitmap
+            } catch (e: OutOfMemoryError) {
+                Log.e("ImageProcessing", "OutOfMemoryError al rotar la imagen: ${e.message}")
+                bitmap
+            }
+        } catch (e: Exception) {
+            Log.e("ImageProcessing", "Error al corregir orientación: ${e.message}")
+            return bitmap
+        } finally {
+            inputStream?.close()
+        }
+    }
+
+    private fun eliminarArchivo(uri: Uri) {
+        try {
+            val file = File(uri.path!!)
+            if (file.exists()) {
+                file.delete()
+                Log.d("Archivo", "Imagen eliminada: ${uri.path}")
+            }
+        } catch (e: Exception) {
+            Log.e("Archivo", "Error al eliminar archivo: ${e.message}")
+        }
+    }
+
+    private fun subirFotosFirestore(imageUri: Uri, tipo: Int) {
+        btnCamara.setImageResource(R.drawable.loading_animation)
+        btnCamara.isEnabled = false
+
         val pedidoId = item?.id ?: return
         val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
         val collectionName = "recojos"
 
-        // Comprimir imagen principal
-        val baos = ByteArrayOutputStream()
-        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-        val imageData = baos.toByteArray()
+        mainImageUploaded = false
+        thumbnailUploaded = false
 
-        // Crear thumbnail (imagen pequeña)
-        val baosThumbnail = ByteArrayOutputStream()
-        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baosThumbnail)
-        val thumbnailData = baosThumbnail.toByteArray()
-
-        // Subir imagen principal
+        val storageRef = Firebase.storage.reference
         val imageRef = storageRef.child("fotospedidos/$pedidoId/$tipoOperacion.jpg")
         val thumbnailRef = storageRef.child("fotospedidos/$pedidoId/${tipoOperacion}_thumbnail.jpg")
 
-        // Variable para controlar si ambas subidas han terminado
-        var mainImageUploaded = false
-        var thumbnailUploaded = false
+        try {
+            // Convertir URI a bytes comprimidos antes de subir
+            val (imageData, thumbnailData) = getCompressedImageAndThumbnail(this, imageUri)
 
-        imageRef.putBytes(imageData).addOnSuccessListener {
-            imageRef.downloadUrl.addOnSuccessListener { imageUrl ->
-                Firebase.firestore.collection(collectionName).document(pedidoId)
-                    .update("pedidoFoto$tipoOperacion", imageUrl.toString())
-
-                mainImageUploaded = true
-                checkAllUploadsCompleted(tipo, mainImageUploaded, thumbnailUploaded)
+            // Subir imagen principal
+            imageRef.putBytes(imageData).addOnSuccessListener {
+                imageRef.downloadUrl.addOnSuccessListener { imageUrl ->
+                    Firebase.firestore.collection(collectionName).document(pedidoId)
+                        .update("pedidoFoto$tipoOperacion", imageUrl.toString())
+                        .addOnSuccessListener {
+                            mainImageUploaded = true
+                            checkAllUploadsCompleted(tipo)
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("Firebase", "Error al actualizar URL en Firestore: ${e.message}")
+                            mostrarErrorYReiniciar()
+                        }
+                }.addOnFailureListener { e ->
+                    Log.e("Firebase", "Error al obtener URL de descarga: ${e.message}")
+                    mostrarErrorYReiniciar()
+                }
+            }.addOnFailureListener { e ->
+                Log.e("Firebase", "Error al subir imagen de $tipoOperacion: ${e.message}")
+                mostrarErrorYReiniciar()
             }
-        }.addOnFailureListener {
-            Log.e("Firebase", "Error al subir imagen de $tipoOperacion")
-            Toast.makeText(this, "Error al subir la imagen de $tipoOperacion", Toast.LENGTH_SHORT).show()
-            // Restaurar el ícono de la cámara en caso de error
-            btnCamara.setImageResource(R.drawable.camera_solid)
-            btnCamara.isEnabled = true
-        }
 
-        // Subir thumbnail
-        thumbnailRef.putBytes(thumbnailData).addOnSuccessListener {
-            thumbnailRef.downloadUrl.addOnSuccessListener { thumbnailUrl ->
-                Firebase.firestore.collection(collectionName).document(pedidoId)
-                    .update("thumbnailFoto$tipoOperacion", thumbnailUrl.toString())
-
-                thumbnailUploaded = true
-                checkAllUploadsCompleted(tipo, mainImageUploaded, thumbnailUploaded)
+            // Subir el thumbnail
+            thumbnailRef.putBytes(thumbnailData).addOnSuccessListener {
+                thumbnailRef.downloadUrl.addOnSuccessListener { thumbnailUrl ->
+                    Firebase.firestore.collection(collectionName).document(pedidoId)
+                        .update("thumbnailFoto$tipoOperacion", thumbnailUrl.toString())
+                        .addOnSuccessListener {
+                            thumbnailUploaded = true
+                            checkAllUploadsCompleted(tipo)
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("Firebase", "Error al actualizar URL del thumbnail: ${e.message}")
+                        }
+                }
+            }.addOnFailureListener { e ->
+                Log.e("Firebase", "Error al subir thumbnail: ${e.message}")
             }
-        }.addOnFailureListener {
-            // Log.e("Firebase", "Error al subir thumbnail de $tipoOperacion")
-            Toast.makeText(this, "Error al subir el thumbnail de $tipoOperacion", Toast.LENGTH_SHORT).show()
-            // Restaurar el ícono de la cámara en caso de error
-            btnCamara.setImageResource(R.drawable.camera_solid)
-            btnCamara.isEnabled = true
+        } catch (e: Exception) {
+            Log.e("Firebase", "Error general al procesar imagen: ${e.message}")
+            mostrarErrorYReiniciar()
         }
     }
 
+    private fun checkAllUploadsCompleted(tipo: Int) {
+        if (mainImageUploaded && thumbnailUploaded) {
+            if (tipo == 1) {
+                seSubioRecogioImagen = true
+                Toast.makeText(this, "Imagen de recojo subida correctamente", Toast.LENGTH_SHORT).show()
+            } else {
+                seSubioEntregaImagen = true
+                Toast.makeText(this, "Imagen de entrega subida correctamente", Toast.LENGTH_SHORT).show()
+            }
+
+            btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.isEnabled = true
+            btnCamara.background = null
+
+            // Activar botón de verificación
+            val typedValue = TypedValue()
+            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
+            btnCheck.setBackgroundColor(typedValue.data)
+            btnCheck.isEnabled = true
+
+            // Eliminar la imagen después de subida completada
+            photoUri?.let { eliminarArchivo(it) }
+        }
+    }
+
+    private fun mostrarErrorYReiniciar() {
+        Toast.makeText(this, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
+        btnCamara.setImageResource(R.drawable.camera_solid)
+        btnCamara.isEnabled = true
+    }
+
+
     // Método para verificar si todas las subidas han terminado
-    private fun checkAllUploadsCompleted(tipo: Int, mainImageUploaded: Boolean, thumbnailUploaded: Boolean) {
+    /*private fun checkAllUploadsCompleted(tipo: Int, mainImageUploaded: Boolean, thumbnailUploaded: Boolean) {
         if (mainImageUploaded && thumbnailUploaded) {
             // Restaurar el ícono de la cámara
             btnCamara.setImageResource(R.drawable.camera_solid)
@@ -466,7 +674,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
             if (tipo == 1) seSubioRecogioImagen = true else seSubioEntregaImagen = true
         }
-    }
+    }*/
 
 
         private fun actualizarEstadoPedido(tipo: Int) {

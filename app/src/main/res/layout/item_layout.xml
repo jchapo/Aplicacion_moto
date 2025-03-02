@@ -2,7 +2,7 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:id="@+id/itemCard"
-    android:backgroundTint="@color/purple_200"
+    android:backgroundTint="?attr/colorPrimaryContainer"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:cardCornerRadius="16dp"
@@ -29,7 +29,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/imagen"/>
+                android:src="@drawable/fondo_gris_nanpi"/>
         </androidx.cardview.widget.CardView>
 
         <!-- Contenedor de texto -->
@@ -51,12 +51,13 @@
 
                 <TextView
                     android:id="@+id/tvClienteNombre"
+
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Nombre Cliente"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"/>
+                    android:textColor="@color/design_default_color_primary_dark"/>
 
                 <TextView
                     android:id="@+id/tvProveedorNombre"
@@ -64,7 +65,7 @@
                     android:layout_height="wrap_content"
                     android:text="Empresa"
                     android:textSize="16sp"
-                    android:textColor="@android:color/black" />
+                    android:textColor="@color/md_theme_primary" />
             </LinearLayout>
 
             <!-- Precio (Derecha) -->
@@ -75,7 +76,7 @@
                 android:layout_weight="1"
                 android:gravity="end"
                 android:text="S/ 0.00"
-                android:textColor="@android:color/holo_blue_dark"
+                android:textColor="@color/material_dynamic_primary30"
                 android:textStyle="bold"
                 android:textSize="20sp" />
         </LinearLayout>

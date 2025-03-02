@@ -21,6 +21,7 @@ import java.util.regex.Pattern
 import java.net.URLDecoder
 import android.util.Log
 import android.widget.LinearLayout
+import com.google.type.LatLng
 import java.net.URL
 import java.net.URLEncoder
 import okhttp3.OkHttpClient
@@ -179,9 +180,16 @@ class EditClientDistrictActivity : AppCompatActivity() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val texto = clipboard.primaryClip?.getItemAt(0)?.text.toString()
 
+        Log.d("TextoPegado", "URL TextoPegado: $texto")
+
+
         // Procesar texto en segundo plano
         CoroutineScope(Dispatchers.IO).launch {
-            coordenadas = obtenerCoordenadas(texto)
+
+
+
+
+            coordenadas = procesarEntrada(texto)
 
             withContext(Dispatchers.Main) {
                 // Quitar loader
@@ -211,7 +219,7 @@ class EditClientDistrictActivity : AppCompatActivity() {
 
 
 
-    fun obtenerCoordenadas(url: String): Pair<Double, Double>? {
+    suspend fun obtenerCoordenadas(url: String): Pair<Double, Double>? {
         extraerCoordenadasUrl(url)?.let { return it }
 
         return try {
@@ -243,16 +251,20 @@ class EditClientDistrictActivity : AppCompatActivity() {
         }
     }
 
-    private fun expandirUrl(url: String): String? {
-        return try {
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            response.request.url.toString()
-        } catch (e: Exception) {
-            Log.e("CoordenadasExtractor", "Error al expandir URL", e)
-            null
+
+    suspend fun expandirUrl(url: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                response.request.url.toString()
+            } catch (e: Exception) {
+                Log.e("CoordenadasExtractor", "Error al expandir URL", e)
+                null
+            }
         }
     }
+
 
     private fun extraerCoordenadasUrl(url: String): Pair<Double, Double>? {
         val decodedUrl = URLDecoder.decode(url, "UTF-8")
@@ -281,32 +293,35 @@ class EditClientDistrictActivity : AppCompatActivity() {
         return match?.groups?.get(1)?.value?.replace("+", " ")
     }
 
-    private fun obtenerCoordenadasGeocoding(lugar: String): Pair<Double, Double>? {
-        val apiKey = BuildConfig.GEO_API_KEY
-        val url = "https://maps.googleapis.com/maps/api/geocode/json?address=${URLEncoder.encode(lugar, "UTF-8")}&key=$apiKey"
+    suspend fun obtenerCoordenadasGeocoding(lugar: String): Pair<Double, Double>? {
+        return withContext(Dispatchers.IO) { // Ejecuta en un hilo de trabajo
+            val apiKey = BuildConfig.GEO_API_KEY
+            val url = "https://maps.googleapis.com/maps/api/geocode/json?address=${
+                URLEncoder.encode(lugar, "UTF-8")
+            }&key=$apiKey"
 
-        return try {
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            val json = JSONObject(response.body?.string() ?: "")
+            try {
+                val request = Request.Builder().url(url).build()
+                val response = OkHttpClient().newCall(request).execute()
+                val json = JSONObject(response.body?.string() ?: "")
 
-            if (json.getString("status") == "OK") {
-                val location = json.getJSONArray("results").getJSONObject(0)
-                    .getJSONObject("geometry").getJSONObject("location")
-                val lat = location.getDouble("lat")
-                val lon = location.getDouble("lng")
+                if (json.getString("status") == "OK") {
+                    val location = json.getJSONArray("results").getJSONObject(0)
+                        .getJSONObject("geometry").getJSONObject("location")
+                    val lat = location.getDouble("lat")
+                    val lon = location.getDouble("lng")
 
-                if (lat in -12.999999..-11.000000 && lon in -77.999999..-76.000000) {
-                    return Pair(lat, lon)
+                    if (lat in -12.999999..-11.000000 && lon in -77.999999..-76.000000) {
+                        return@withContext Pair(lat, lon)
+                    }
                 }
+                null // Retorna null si la condición no se cumple
+            } catch (e: Exception) {
+                Log.e("Geocoding", "Error en la API de Geocoding", e)
+                null
             }
-            null // Retorna null explícitamente si la condición no se cumple
-        } catch (e: Exception) {
-            Log.e("CoordenadasExtractor", "Error en Geocoding API", e)
-            null // Retorna null en caso de excepción
         }
     }
-
 
     private fun guardarCambios() {
         val clienteDistrito = spinnerDistritos.selectedItem.toString()
@@ -348,5 +363,23 @@ class EditClientDistrictActivity : AppCompatActivity() {
                 textoCoordenadas != "No hay coordenadas"
         return valoresValidos
     }
+
+    suspend fun procesarEntrada(texto: String): Pair<Double, Double>? {
+        return if (esURL(texto)) {
+            obtenerCoordenadas(texto)
+        } else {
+            obtenerCoordenadasGeocoding(texto)
+        }
+    }
+
+    fun esURL(texto: String): Boolean {
+        // Verificar si el texto comienza con "http://", "https://" o "www."
+        if (texto.startsWith("http://") || texto.startsWith("https://") || texto.startsWith("www.")) {
+            println("esURL")
+            return true
+        }
+        return false
+    }
+
 
 }

@@ -23,27 +23,38 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
 
         auth = FirebaseAuth.getInstance()
-        oneTapClient = Identity.getSignInClient(this)
 
-        val signInRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    .setServerClientId(getString(R.string.default_web_client_id))
-                    .setFilterByAuthorizedAccounts(false)
-                    .build()
-            ).build()
+        // Verificar si ya hay un usuario autenticado
+        if (auth.currentUser != null) {
+            val email = auth.currentUser?.email
+            if (email != null) {
+                obtenerRolDeFirestore(email)  // Verifica el rol y redirige a MainActivity si es necesario
+            }
+            return
+        }
+
+        setContentView(R.layout.activity_login)
+
+        oneTapClient = Identity.getSignInClient(this)
 
         val signInButton = findViewById<SignInButton>(R.id.btnGoogleSignIn)
 
         signInButton.setOnClickListener {
-            if (isSigningIn) return@setOnClickListener  // Evita múltiples clics
+            if (isSigningIn) return@setOnClickListener
 
             isSigningIn = true
-            signInButton.isEnabled = false  // Deshabilita el botón
+            signInButton.isEnabled = false
+
+            val signInRequest = BeginSignInRequest.builder()
+                .setGoogleIdTokenRequestOptions(
+                    BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
+                        .setSupported(true)
+                        .setServerClientId(getString(R.string.default_web_client_id))
+                        .setFilterByAuthorizedAccounts(false)
+                        .build()
+                ).build()
 
             oneTapClient.beginSignIn(signInRequest)
                 .addOnSuccessListener { result ->
@@ -56,10 +67,11 @@ class LoginActivity : AppCompatActivity() {
                     Log.e("LoginActivity", "Error al iniciar sesión", e)
                     Toast.makeText(this, "Error al iniciar sesión", Toast.LENGTH_SHORT).show()
                     isSigningIn = false
-                    signInButton.isEnabled = true  // Rehabilita el botón en caso de error
+                    signInButton.isEnabled = true
                 }
         }
     }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)

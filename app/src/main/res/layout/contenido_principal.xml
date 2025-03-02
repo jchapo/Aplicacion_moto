@@ -30,6 +30,7 @@
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardIndUno"
                 android:layout_width="80dp"
+                android:backgroundTint="@color/md_theme_outline"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
                 app:cardCornerRadius="20dp"
@@ -47,12 +48,15 @@
                     android:layout_height="wrap_content"
                     android:textSize="25dp"
                     android:text="Ind 1"
+                    android:textColor="@color/white"
                     android:textStyle="bold"
                     android:gravity="center"/>
                 <TextView
+                    android:id="@+id/textUno"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Recojos"
+                    android:textColor="@color/white"
                     android:textSize="16dp"
                     android:gravity="center"/>
                 </LinearLayout>
@@ -62,6 +66,7 @@
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardIndDos"
                 android:layout_width="80dp"
+                android:backgroundTint="@color/md_theme_primaryFixedDim_mediumContrast"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
@@ -80,14 +85,16 @@
                         android:layout_height="wrap_content"
                         android:textSize="25dp"
                         android:textStyle="bold"
-
+                        android:textColor="@color/white"
                         android:text="Ind 1"
                         android:gravity="center"/>
 
                     <TextView
+                        android:id="@+id/textDos"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Entregas"
+                        android:textColor="@color/white"
                         android:textSize="16dp"
                         android:gravity="center"/>
                 </LinearLayout>
@@ -96,6 +103,18 @@
 
         </LinearLayout>
     </FrameLayout>
+
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/tarjetaVacia"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:textSize="25sp"
+        android:text="@string/mensaje_de_tarjeta_vac_a"
+        android:textStyle="bold"
+        android:gravity="center"/>
 
     <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
