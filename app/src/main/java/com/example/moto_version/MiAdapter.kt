@@ -49,10 +49,10 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         // Verificar si la fecha de recojo es diferente de null
         if (recojo.fechaRecojoPedidoMotorizado != null) {
             // Si es distinto de null, cambiar el color de fondo del CardView usando backgroundTint
-            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.md_theme_primaryContainer)
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.md_theme_errorContainer)
         } else {
             // Si es null, usar otro color (o el color predeterminado)
-            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.md_theme_tertiaryContainer)
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.md_theme_primaryContainer)
         }
 
         // Agregar clic para abrir una nueva actividad

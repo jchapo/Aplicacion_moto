@@ -5,91 +5,160 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     tools:context=".EditClientDistrictActivity">
 
+    <!-- Título principal -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Editar Distrito de Cliente"
-        android:textSize="20sp"
+        android:text="Editar Destino de Cliente"
+        android:textSize="25sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="24dp"/>
+        android:background="@color/md_theme_inversePrimary"
+        android:padding="12dp"/>
 
-    <TextView
+    <!-- Contenedor scrollable para el contenido -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Seleccione el distrito:"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
 
-    <Spinner
-        android:id="@+id/spinnerDistritos"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <CheckBox
-        android:id="@+id/cbSupera30x30"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="El paquete supera las dimensiones 30x30"
-        android:layout_marginBottom="8dp"/>
+            <!-- TARJETA PRINCIPAL -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Selección de distrito -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Seleccione el distrito:"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerDistritos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/rounded_button"
+                        android:padding="8dp"/>
+
+                    <!-- Checkbox dimensiones -->
+                    <CheckBox
+                        android:id="@+id/cbSupera30x30"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="El paquete supera las dimensiones 30x30"
+                        android:layout_marginBottom="18dp"/>
+
+                    <!-- Container de tarifa -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardCornerRadius="8dp"
+                        app:cardBackgroundColor="#f5f5f5"
+                        app:cardElevation="2dp">
+
+                        <LinearLayout
+                            android:id="@+id/tvComisionTarifaContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Tarifa de comisión:"
+                                android:textSize="18sp"/>
+
+                            <TextView
+                                android:id="@+id/tvComisionTarifa"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="S/ 10"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginStart="8dp"
+                                android:textColor="@color/md_theme_primary"/>
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <!-- Sección de coordenadas -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Coordenadas:"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:cardCornerRadius="8dp"
+                        app:cardBackgroundColor="#f5f5f5"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/tvCoordenadas"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="14sp"
+                            android:padding="12dp"/>
+                    </androidx.cardview.widget.CardView>
+
+                    <!-- Botón pegar coordenadas -->
+                    <Button
+                        android:id="@+id/btnPegarCoordenadas"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Pegar"
+                        android:background="@drawable/rounded_button"
+                        android:textColor="@color/white"
+                        android:layout_marginBottom="16dp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Botón de guardar al fondo -->
     <LinearLayout
-        android:id="@+id/tvComisionTarifaContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="24dp">
+        android:background="#EEEEEE"
+        android:padding="8dp"
+        android:elevation="4dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tarifa de comisión:"
-            android:textSize="16sp"/>
-
-        <TextView
-            android:id="@+id/tvComisionTarifa"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="S/ 10"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginStart="8dp"/>
-
+        <Button
+            android:id="@+id/btnGuardar"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Guardar Cambios"
+            android:background="@drawable/rounded_button"
+            android:textColor="@color/white"
+            android:textStyle="bold"/>
     </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Coordenadas:"
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp"/>
-
-    <TextView
-        android:id="@+id/tvCoordenadas"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No hay coordenadas"
-        android:textSize="14sp"
-        android:padding="12dp"
-        android:background="#f0f0f0"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnPegarCoordenadas"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Pegar Coordenadas desde Portapapeles"
-        android:layout_marginBottom="32dp"/>
-
-    <Button
-        android:id="@+id/btnGuardar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Guardar Cambios"
-        android:backgroundTint="@color/teal_200"/>
-
 </LinearLayout>

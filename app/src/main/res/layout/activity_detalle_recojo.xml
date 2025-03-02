@@ -11,15 +11,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Monto a cobrar: "
-        android:textSize="20sp"
+        android:textSize="25sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:backgroundTint="?android:attr/colorActivatedHighlight"
-        android:padding="12dp"
-        android:background="#f5f5f5"/>
+        android:background="@color/md_theme_inversePrimary"
+        android:padding="12dp"/>
 
     <!-- Contenedor scrollable para tarjetas -->
     <ScrollView
+        android:id="@+id/tvDetalleScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -48,35 +48,35 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="16dp"
-                android:background="#e0e0e0">
+                android:background="@color/md_theme_primary">
 
                 <!-- Nombre del Cliente -->
                 <TextView
                     android:id="@+id/tvDetalleCliente"
                     android:layout_width="0dp"
+                    android:padding="16dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Cliente: Juan Pérez"
-                    android:textSize="22sp"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#000000"/>
+                    android:textColor="@color/white"/>
 
                 <!-- Botón Editar -->
                 <FrameLayout
                     android:layout_width="50dp"
-                    android:layout_height="50dp">
+                    android:layout_height="match_parent">
 
                     <ImageButton
                         android:id="@+id/btnEditarCliente"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:background="@null"
-                        android:src="@drawable/pen_to_square_solid"
+                        android:src="@drawable/location_crosshairs_solid"
                         android:contentDescription="Editar Cliente"
                         android:scaleType="fitCenter"
-                        android:padding="10dp"/>
+                        android:padding="13dp"/>
                 </FrameLayout>
             </LinearLayout>
 
@@ -262,10 +262,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Proveedor: "
-                android:textSize="22sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:padding="16dp"
-                android:background="#e0e0e0"/>
+                android:textColor="@color/white"
+                android:background="@color/md_theme_primary"/>
 
             <!-- Contenedor de botones para Proveedor -->
             <LinearLayout
@@ -451,8 +452,9 @@
             android:layout_height="60dp"
             android:layout_weight="1"
             android:scaleType="centerInside"
-            android:background="@null"
+            android:background="@drawable/rounded_button"
             android:padding="10dp"
+            android:layout_marginEnd="8dp"
             android:src="@drawable/camera_solid"
             android:contentDescription="Abrir cámara" />
 
@@ -462,11 +464,13 @@
             android:layout_height="60dp"
             android:layout_weight="1"
             android:scaleType="centerInside"
-            android:background="@null"
+            android:background="@drawable/rounded_button"
             android:padding="10dp"
+            android:layout_marginStart="8dp"
             android:src="@drawable/check_solid"
             android:contentDescription="Confirmar acción" />
     </LinearLayout>
+
 
 
 </LinearLayout>

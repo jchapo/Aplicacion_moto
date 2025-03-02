@@ -34,6 +34,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.Settings
 import android.view.View
+import android.view.View.GONE
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
@@ -105,11 +106,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Configurar listener para el botón flotante
         val fabMenu = findViewById<FloatingActionButton>(R.id.fab_menu)
-        fabMenu.setOnClickListener {
+        fabMenu.visibility = GONE
+        /*fabMenu.setOnClickListener {
             if (!drawerLayout.isDrawerOpen(GravityCompat.START)) {
                 drawerLayout.openDrawer(GravityCompat.START)
             }
-        }
+        }*/
 
         // Configurar navegación del menú lateral
         navView.setNavigationItemSelectedListener { menuItem ->
@@ -200,29 +202,28 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         cardIndUno.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
         cardIndDos.visibility = if (cantidadEntregasTotal == 0) View.GONE else View.VISIBLE
 
+        /*if (cantidadRecojosTotal == 0 && cantidadEntregasTotal == 0) {
+            tarjetaVacia.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+            tarjetaVacia.text = "No hay pendientes"
+        } else {
+            tarjetaVacia.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+        }*/
+
         val horaActual = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
-        if (horaActual < 13) {
-            // Antes de las 13 horas
-            if (cantidadRecojosTotal == 0) {
-                tarjetaVacia.visibility = View.VISIBLE
-                recyclerView.visibility = View.GONE
-                tarjetaVacia.text = "No hay recojos pendientes"
-            } else {
-                tarjetaVacia.visibility = View.GONE
-                recyclerView.visibility = View.VISIBLE
-            }
+        val hayRecojosOPendientes = cantidadRecojosTotal != 0 || cantidadEntregasTotal != 0
+
+        if (hayRecojosOPendientes) {
+            tarjetaVacia.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
         } else {
-            // A partir de las 13 horas
-            if (cantidadRecojosTotal == 0 && cantidadEntregasTotal == 0) {
-                tarjetaVacia.visibility = View.VISIBLE
-                recyclerView.visibility = View.GONE
-                tarjetaVacia.text = "No hay recojos pendientes"
-            } else {
-                tarjetaVacia.visibility = View.GONE
-                recyclerView.visibility = View.VISIBLE
-            }
+            tarjetaVacia.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+            tarjetaVacia.text = "No hay pendientes"
         }
+
     }
 
 
@@ -279,15 +280,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     }
                 }
 
-                if (horaActual >= 13) {
+                /*if (horaActual >= 13) {
                     datosCargados = true
                     mMap?.let {
                         actualizarMapa()
                     }
-                }
+                }*/
             }
 
-        if (horaActual >= 13) {
+        /*if (horaActual >= 13) {*/
 
             entregasListener = db.collection("recojos")
                 .whereEqualTo("motorizadoEntrega", rutaMotorizado) // Solo un filtro en Firestore
@@ -362,7 +363,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         actualizarMapa()
                     }
                 }
-        }
+        /*}*/
     }
 
 
@@ -846,7 +847,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         Log.e("listaCombinada", "listaCombinada1: $listaCombinada")
 
-        if (horaActual >= 13) {
+        /*if (horaActual >= 13) {*/
             val puntosEntregaConDistancia = puntosEntregaLista.map { punto ->
                 val resultado = FloatArray(1)
                 Location.distanceBetween(
@@ -860,7 +861,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             // Combinamos ambas listas
             listaCombinada.addAll(puntosEntregaConDistancia)
             Log.e("listaCombinada", "listaCombinada2: $listaCombinada")
-        }
+        /*}*/
 
         // Ordenamos la lista combinada por distancia
         val listaOrdenada = listaCombinada.sortedBy { it.second }

@@ -92,6 +92,8 @@ class EditClientDistrictActivity : AppCompatActivity() {
             if (checkValues()){
                 btnGuardar.visibility = View.VISIBLE
                 btnGuardar.isEnabled = true
+            } else {
+                btnGuardar.isEnabled = false
             }
         }
 
@@ -108,6 +110,8 @@ class EditClientDistrictActivity : AppCompatActivity() {
             if (checkValues){
                 btnGuardar.visibility = View.VISIBLE
                 btnGuardar.isEnabled = true
+            } else {
+                btnGuardar.isEnabled = false
             }
         }
 
@@ -118,6 +122,8 @@ class EditClientDistrictActivity : AppCompatActivity() {
                 if (checkValues()){
                     btnGuardar.visibility = View.VISIBLE
                     btnGuardar.isEnabled = true
+                } else {
+                    btnGuardar.isEnabled = false
                 }
             }
 
@@ -130,7 +136,7 @@ class EditClientDistrictActivity : AppCompatActivity() {
     private fun setupDistritosSpinner() {
         // Lista de distritos de Lima
         val distritos = arrayOf(
-            "",
+            "Selecciona una opción",
             "Ate (Lima)", "Barranco (Lima)", "Breña (Lima)", "Carabayllo (Lima)", "Chaclacayo (Lima)", "Chorrillos (Lima)",
             "Comas (Lima)", "Cercado de Lima (Lima)", "El Agustino (Lima)", "Huachipa (Ate, Lima)", "Independencia (Lima)",
             "Jesús María (Lima)", "La Molina (Lima)", "La Victoria (Lima)", "Lince (Lima)", "Los Olivos (Lima)",
@@ -172,27 +178,16 @@ class EditClientDistrictActivity : AppCompatActivity() {
     }
 
     private fun obtenerCoordenadasDelPortapapeles() {
-        // Mostrar loader
         tvCoordenadas.text = "Obteniendo coordenadas..."
         tvCoordenadas.setCompoundDrawablesWithIntrinsicBounds(R.drawable.loading_animation, 0, 0, 0)
 
-        // Obtener texto del portapapeles
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val texto = clipboard.primaryClip?.getItemAt(0)?.text.toString()
 
         Log.d("TextoPegado", "URL TextoPegado: $texto")
-
-
-        // Procesar texto en segundo plano
         CoroutineScope(Dispatchers.IO).launch {
-
-
-
-
             coordenadas = procesarEntrada(texto)
-
             withContext(Dispatchers.Main) {
-                // Quitar loader
                 tvCoordenadas.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
 
                 if (coordenadas != null) {
@@ -206,12 +201,15 @@ class EditClientDistrictActivity : AppCompatActivity() {
                     if (checkValues()){
                         btnGuardar.visibility = View.VISIBLE
                         btnGuardar.isEnabled = true
+                    } else {
+                        btnGuardar.isEnabled = false
                     }
                 } else {
-                    tvCoordenadas.text = "No se pudieron obtener coordenadas"
+                    //tvCoordenadas.text = "No se pudieron obtener coordenadas"
                     Toast.makeText(this@EditClientDistrictActivity,
-                        "No se pudieron extraer coordenadas del texto",
+                        "No se pudieron obtener coordenadas",
                         Toast.LENGTH_SHORT).show()
+                    btnGuardar.isEnabled = true
                 }
             }
         }
@@ -342,7 +340,7 @@ class EditClientDistrictActivity : AppCompatActivity() {
             db.collection("recojos").document(clienteId)
                 .update(recojoData as Map<String, Any>)
                 .addOnSuccessListener {
-                    Toast.makeText(this, "Datos guardados con éxito", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Destino actualizado", Toast.LENGTH_SHORT).show()
                     finish() // Cierra la actividad actual
                 }
                 .addOnFailureListener {
@@ -358,9 +356,9 @@ class EditClientDistrictActivity : AppCompatActivity() {
         val textoCoordenadas = tvCoordenadas.text.toString()
 
         // Verificar si los valores requeridos existen
-        val valoresValidos = clienteDistrito.isNotEmpty() && clienteDistrito != "" &&
-                textoCoordenadas != "No se pudieron obtener coordenadas" &&
-                textoCoordenadas != "No hay coordenadas"
+        val valoresValidos = clienteDistrito.isNotEmpty() &&
+                clienteDistrito != "Selecciona una opción" &&
+                textoCoordenadas != ""
         return valoresValidos
     }
 

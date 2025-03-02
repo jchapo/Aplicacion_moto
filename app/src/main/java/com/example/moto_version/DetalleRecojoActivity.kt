@@ -14,6 +14,7 @@ import com.example.moto_version.models.Item
 import com.google.firebase.firestore.FirebaseFirestore
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -24,6 +25,7 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
@@ -36,6 +38,8 @@ import java.io.ByteArrayOutputStream
 import com.google.firebase.Timestamp
 import java.io.File
 import java.io.InputStream
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
 
 
 class DetalleRecojoActivity : AppCompatActivity() {
@@ -47,6 +51,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private lateinit var btnEditarCliente: ImageButton
     private lateinit var imagenRecojo: ImageView
     private lateinit var imagenEntrega: ImageView
+    private lateinit var tvDetalleScroll: ScrollView
     private var seRecogioImagen: Boolean = false
     private var seEntregoImagen: Boolean = false
     private var seSubioRecogioImagen: Boolean = false
@@ -87,6 +92,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val tvPrecio = findViewById<TextView>(R.id.tvDetallePrecio)
         val tvCardCliente = findViewById<LinearLayout>(R.id.tvCardCliente)
         val tvCardProveedor = findViewById<LinearLayout>(R.id.tvCardProveedor)
+        val tvDetalleScroll: ScrollView = findViewById(R.id.tvDetalleScroll)
+
 
         val btnTelefonoCliente = findViewById<ImageButton>(R.id.btnTelefonoCliente)
         val btnTelefonoProveedor = findViewById<ImageButton>(R.id.btnTelefonoProveedor)
@@ -102,12 +109,14 @@ class DetalleRecojoActivity : AppCompatActivity() {
         btnCheck = findViewById(R.id.btnCheck)
         btnEditarCliente = findViewById(R.id.btnEditarCliente)
 
+        val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+        btnCamara.backgroundTintList = color
+        btnCheck.isEnabled = false  // Deshabilita el botón
+        btnCheck.alpha = 0.5f       // Reduce la opacidad al 50%
+
+
         btnCamara.setOnClickListener {
-            val typedValue = TypedValue()
-            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-            btnCamara.setBackgroundColor(typedValue.data)
-            btnCheck.isEnabled = false
-            btnCheck.background = null
+            btnCamara.isEnabled = false
             abrirCamara()
         }
 
@@ -131,17 +140,11 @@ class DetalleRecojoActivity : AppCompatActivity() {
         if (fechaRecojoPedidoMotorizado == null) {
             tvPrecio.text = "RECOJO PENDIENTE"
             tvCardCliente.visibility = View.GONE
-            val typedValue = TypedValue()
-            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-            btnCamara.setBackgroundColor(typedValue.data)
-            btnCheck.isEnabled = false  // Deshabilita el botón
         } else if (fechaEntregaPedidoMotorizado == null) {
-            tvPrecio.backgroundTintList = ContextCompat.getColorStateList(this, R.color.teal_200)
-            tvPrecio.textSize = 20f
-            val typedValue = TypedValue()
-            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-            btnCamara.setBackgroundColor(typedValue.data)
-            btnCheck.isEnabled = false  // Deshabilita el botón
+            tvPrecio.isClickable = true  // Habilita clics
+            tvPrecio.setOnClickListener {
+                mostrarDialogoConImagen()
+            }
         }
 
         db = FirebaseFirestore.getInstance()
@@ -230,6 +233,18 @@ class DetalleRecojoActivity : AppCompatActivity() {
         }
     }
 
+    private fun mostrarDialogoConImagen() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_imagen, null)
+
+        // Obtener el ImageView y asignarle la imagen
+        val imgDialog = dialogView.findViewById<ImageView>(R.id.imgDialog)
+        imgDialog.setImageResource(R.drawable.logo_nanpi)
+
+        // Usar MaterialAlertDialogBuilder para un diseño más moderno
+        MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .show()
+    }
 
 
     private fun actualizarBotonesLlamada(
@@ -388,6 +403,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
             cameraLauncher.launch(intent)
         } catch (e: Exception) {
+            btnCamara.isEnabled = true
+            btnCheck.alpha = 1f       // Reduce la opacidad al 50%
             Log.e("Cámara", "Error al abrir la cámara: ${e.message}")
             Toast.makeText(this, "Error al abrir la cámara", Toast.LENGTH_SHORT).show()
         }
@@ -565,7 +582,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
     private fun subirFotosFirestore(imageUri: Uri, tipo: Int) {
         btnCamara.setImageResource(R.drawable.loading_animation)
-        btnCamara.isEnabled = false
 
         val pedidoId = item?.id ?: return
         val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
@@ -630,21 +646,20 @@ class DetalleRecojoActivity : AppCompatActivity() {
         if (mainImageUploaded && thumbnailUploaded) {
             if (tipo == 1) {
                 seSubioRecogioImagen = true
-                Toast.makeText(this, "Imagen de recojo subida correctamente", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this, "Imagen de recojo subida correctamente", Toast.LENGTH_SHORT).show()
             } else {
                 seSubioEntregaImagen = true
-                Toast.makeText(this, "Imagen de entrega subida correctamente", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this, "Imagen de entrega subida correctamente", Toast.LENGTH_SHORT).show()
             }
 
             btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.backgroundTintList = null
             btnCamara.isEnabled = true
-            btnCamara.background = null
 
-            // Activar botón de verificación
-            val typedValue = TypedValue()
-            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-            btnCheck.setBackgroundColor(typedValue.data)
+            val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+            btnCheck.backgroundTintList = color
             btnCheck.isEnabled = true
+            btnCheck.alpha = 1f
 
             // Eliminar la imagen después de subida completada
             photoUri?.let { eliminarArchivo(it) }
