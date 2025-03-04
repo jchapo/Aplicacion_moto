@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <!-- Información de monto a cobrar -->
+    <TextView
+        android:id="@+id/cliente_tvDetallePrecio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Monto a cobrar: "
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:background="@color/md_theme_inversePrimary"
+        android:padding="12dp"/>
+
+    <!-- Contenedor scrollable para tarjetas -->
+    <ScrollView
+        android:id="@+id/cliente_tvDetalleScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- TARJETA DEL CLIENTE -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:id="@+id/cliente_tvCardCliente"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@color/md_theme_primary">
+
+                        <!-- Nombre del Cliente -->
+                        <TextView
+                            android:id="@+id/cliente_tvDetalleCliente"
+                            android:layout_width="0dp"
+                            android:padding="16dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Cliente: Juan Pérez"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white"/>
+
+                        <!-- Botón Editar -->
+                        <FrameLayout
+                            android:visibility="gone"
+                            android:layout_width="50dp"
+                            android:layout_height="match_parent">
+
+                            <ImageButton
+                                android:id="@+id/cliente_btnEditarCliente"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:background="@null"
+                                android:src="@drawable/location_crosshairs_solid"
+                                android:contentDescription="Editar Cliente"
+                                android:scaleType="fitCenter"
+                                android:padding="13dp"/>
+                        </FrameLayout>
+                    </LinearLayout>
+
+
+                    <!-- Contenedor de botones para Cliente -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <!-- Primera columna: Imagen en un CardView (peso 2) -->
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="10dp"
+                            app:cardElevation="4dp"
+                            app:cardBackgroundColor="#f5f5f5"
+                            android:layout_margin="4dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+
+                                <ImageView
+                                    android:id="@+id/cliente_imagenEntrega"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="0dp"
+                                    android:src="@drawable/fondo_gris_nanpi"
+                                    android:scaleType="centerCrop"
+                                    android:contentDescription="@string/image_description"
+                                    app:layout_constraintDimensionRatio="H,3:4"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"/>
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+                        </androidx.cardview.widget.CardView>
+
+                        <!-- Segunda columna: Botones en dos filas (peso 1) -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:layout_marginStart="8dp">
+
+                            <!-- Primera fila: Waze y Maps -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center"
+                                android:layout_marginBottom="4dp">
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnWazeCliente"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/waze_brands"
+                                            android:background="@null"
+                                            android:contentDescription="@string/waze_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnMapsCliente"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/map_regular"
+                                            android:background="@null"
+                                            android:contentDescription="@string/maps_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+                            </LinearLayout>
+
+                            <!-- Segunda fila: WhatsApp y Teléfono -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center">
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnWhatsappCliente"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/whatsapp_brands"
+                                            android:background="@null"
+                                            android:contentDescription="@string/whatsapp_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnTelefonoCliente"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/phone_solid"
+                                            android:background="@null"
+                                            android:contentDescription="@string/telefono_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>        </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- TARJETA DEL PROVEEDOR -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:id="@+id/cliente_tvCardProveedor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Título de la tarjeta Proveedor -->
+                    <TextView
+                        android:id="@+id/cliente_tvDetalleProveedor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Proveedor: "
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:padding="16dp"
+                        android:textColor="@color/white"
+                        android:background="@color/md_theme_primary"/>
+
+                    <!-- Contenedor de botones para Proveedor -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:padding="12dp">
+
+                        <!-- Primera columna: Imagen en un CardView (igual que el cliente) -->
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="10dp"
+                            app:cardElevation="4dp"
+                            app:cardBackgroundColor="#f5f5f5"
+                            android:layout_margin="4dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+
+                                <ImageView
+                                    android:id="@+id/cliente_imagenRecojo"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="0dp"
+                                    android:src="@drawable/fondo_gris_nanpi"
+                                    android:scaleType="centerCrop"
+                                    android:contentDescription="@string/image_description"
+                                    app:layout_constraintDimensionRatio="H,3:4"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"/>
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+                        </androidx.cardview.widget.CardView>
+
+                        <!-- Segunda columna: Botones en dos filas (igual que cliente) -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:layout_marginStart="8dp">
+
+                            <!-- Primera fila: Waze y Maps -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center"
+                                android:layout_marginBottom="4dp">
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnWazeProveedor"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/waze_brands"
+                                            android:background="@null"
+                                            android:contentDescription="@string/waze_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnMapsProveedor"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/map_regular"
+                                            android:background="@null"
+                                            android:contentDescription="@string/maps_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+                            </LinearLayout>
+
+                            <!-- Segunda fila: WhatsApp y Teléfono -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center">
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnWhatsappProveedor"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/whatsapp_brands"
+                                            android:background="@null"
+                                            android:contentDescription="@string/whatsapp_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+
+                                <FrameLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="10dp">
+
+                                    <androidx.cardview.widget.CardView
+                                        android:layout_width="50dp"
+                                        android:layout_height="50dp"
+                                        app:cardCornerRadius="10dp"
+                                        app:cardElevation="2dp"
+                                        app:cardBackgroundColor="#f5f5f5">
+
+                                        <ImageButton
+                                            android:id="@+id/cliente_btnTelefonoProveedor"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:src="@drawable/phone_solid"
+                                            android:background="@null"
+                                            android:contentDescription="@string/telefono_description"
+                                            android:scaleType="fitCenter"
+                                            android:padding="10dp"/>
+                                    </androidx.cardview.widget.CardView>
+                                </FrameLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

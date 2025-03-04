@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".CreateOrderActivity">
+
+    <!-- Título principal -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Crear Nuevo Pedido"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:background="@color/md_theme_inversePrimary"
+        android:padding="12dp"/>
+
+    <!-- Contenedor scrollable para el contenido -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- SECCIÓN PROVEEDOR -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Información del Proveedor"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etProveedorNombre"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Nombre del proveedor"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etProveedorTelefono"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Teléfono del proveedor"
+                            android:inputType="phone"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etProveedorDireccion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Dirección del proveedor"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <Button
+                        android:id="@+id/btnObtenerCoordenadasProveedor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Obtener Coordenadas"
+                        android:background="@drawable/rounded_button"
+                        android:textColor="@color/white"
+                        android:layout_marginBottom="8dp"/>
+
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/tvCardCoordenadasProveedor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="8dp"
+                        android:layout_marginBottom="8dp"
+                        app:cardBackgroundColor="#f5f5f5"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/tvCoordenadasProveedor"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="12dp"
+                            android:textSize="14sp"/>
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Distrito:"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="4dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerProveedorDistrito"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/rounded_button"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- SECCIÓN CLIENTE -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Información del Cliente"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etClienteNombre"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Nombre del cliente"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etClienteTelefono"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Teléfono del cliente"
+                            android:inputType="phone"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etClienteDireccion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Dirección del cliente"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <Button
+                        android:id="@+id/btnObtenerCoordenadasCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Obtener Coordenadas"
+                        android:background="@drawable/rounded_button"
+                        android:textColor="@color/white"
+                        android:layout_marginBottom="8dp"/>
+
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/tvCardCoordenadasCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="8dp"
+                        android:layout_marginBottom="8dp"
+                        app:cardBackgroundColor="#f5f5f5"
+                        app:cardElevation="2dp">
+
+                        <TextView
+                            android:id="@+id/tvCoordenadasCliente"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="12dp"
+                            android:textSize="14sp"/>
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Distrito:"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="4dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerClienteDistrito"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/rounded_button"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- SECCIÓN PEDIDO -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Información del Pedido"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPedidoDetalle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Detalle del pedido"
+                            android:minLines="2"
+                            android:gravity="top|start"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etFechaEntrega"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Fecha y hora de entrega"
+                            android:focusable="false"
+                            android:clickable="true"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPedidoObservaciones"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Observaciones (opcional)"
+                            android:minLines="2"
+                            android:gravity="top|start"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchPaqueteGrande"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="¿El paquete supera las dimensiones 30x30?"
+                        android:layout_marginBottom="16dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchPedidoSeCobra"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="¿Se cobrará al cliente?"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                            android:id="@+id/tvMetodoPago"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Método de pago:"
+                            android:textSize="16sp"
+                            android:visibility="gone"
+                            android:layout_marginBottom="4dp"/>
+
+                        <Spinner
+                            android:id="@+id/spinnerMetodoPago"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/rounded_button"
+                            android:padding="12dp"
+                            android:visibility="gone"
+                            android:layout_marginBottom="8dp"/>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilPedidoCantidadCobrar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etPedidoCantidadCobrar"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Cantidad a cobrar (S/)"
+                                android:inputType="numberDecimal"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="8dp"
+                        app:cardBackgroundColor="#f5f5f5"
+                        app:cardElevation="2dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Tarifa de comisión:"
+                                android:textSize="18sp"/>
+
+                            <TextView
+                                android:id="@+id/tvComisionTarifa"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="S/ 0.00"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginStart="8dp"
+                                android:textColor="@color/md_theme_primary"/>
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Botón para crear pedido con ProgressBar -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#EEEEEE"
+        android:padding="8dp"
+        android:elevation="4dp">
+
+        <Button
+            android:id="@+id/btnCrearPedido"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Crear Pedido"
+            android:background="@drawable/rounded_button"
+            android:textColor="@color/white"
+            android:textStyle="bold"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+    </FrameLayout>
+</LinearLayout>

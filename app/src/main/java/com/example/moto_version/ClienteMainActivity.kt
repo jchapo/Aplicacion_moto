@@ -54,10 +54,10 @@ import java.net.HttpURLConnection
 private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
 private const val REQUEST_LOCATION_SETTINGS = 1002
 
-class MainActivity : AppCompatActivity(), OnMapReadyCallback {
+class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: MiAdapter
+    private lateinit var adapter: ClienteMiAdapter
     private var mMap: GoogleMap? = null
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
@@ -65,7 +65,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var datosCargados = false  // Variable para controlar si los datos están cargados
     private var ubicacionDisponible = false  // Variable para controlar si la ubicación está disponible
     private var mapaListo = false // Variable para saber si el mapa ya está inicializado
-    private var rutaMotorizado: String = ""
+    private var phone: String = ""
+    private var nombreEmpresa: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
     data class PuntoPedido(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String)
@@ -75,81 +76,87 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var kmlLayer: KmlLayer? = null
     private val marcadores = mutableListOf<Marker>() // Lista para guardar referencia a todos los marcadores
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.cliente_activity_main)
+
+        val sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val modalMostrado = sharedPreferences.getBoolean("modal_mostrado", false)
+
+        if (!modalMostrado) {
+            val anuncioDialog = AnuncioDialogFragment()
+            anuncioDialog.show(supportFragmentManager, "AnuncioDialog")
+
+            // Guardar que el modal ya se mostró
+            sharedPreferences.edit().putBoolean("modal_mostrado", true).apply()
+        }
+
+        phone = intent.getStringExtra("phone") ?: ""
+        nombreEmpresa = intent.getStringExtra("nombreEmpresa") ?: ""
+        Log.d("ClienteMainActivity", "Phone recibido: $phone")
+
+        escucharCambiosEnUsuario()
+
+        // Inicializar el mapa
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.cliente_map_container) as? SupportMapFragment
+        mapFragment?.getMapAsync(this)
+
+        // Configurar RecyclerView
+        recyclerView = findViewById(R.id.cliente_recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        adapter = ClienteMiAdapter(emptyList())  // Inicialmente vacío
+        recyclerView.adapter = adapter
+
+        // Cargar datos desde Firestore
+        obtenerDatosFirestore()
+
+        // Inicializar DrawerLayout
+        drawerLayout = findViewById(R.id.cliente_drawer_layout)
+        val navView = findViewById<NavigationView>(R.id.cliente_nav_view)
+
+        // Configurar listener para el botón flotante
+        val fabMenu = findViewById<FloatingActionButton>(R.id.cliente_fab_menu)
+        //fabMenu.visibility = GONE
+        fabMenu.setOnClickListener {
+            // Crear intent para iniciar la nueva actividad
+            val intent = Intent(this, CreateOrderActivity::class.java).apply {
+                putExtra("phone", phone)  // Pasa la variable "proveedorTelefono"
+                putExtra("nombreEmpresa", nombreEmpresa)  // Pasa la variable "ruta"
+            }
+            this.startActivity(intent)
+        }
+
+        actualizarIndicadores()
+
+    }
 
 
 
     private fun actualizarIndicadores() {
         val cantidadPuntosRecojo = puntosRecojoLista.size
-        val cantidadPuntosRecojoEspecial = puntosRecojoListaEspecial.size
-        val cantidadPuntosEntrega = puntosEntregaLista.size
-
         val cantidadRecojosTotal = cantidadPuntosRecojo
-        val cantidadEntregasTotal = cantidadPuntosEntrega + cantidadPuntosRecojoEspecial
+        val indDos: TextView = findViewById(R.id.cliente_indDos)
+        val cardIndDos: CardView = findViewById(R.id.cliente_cardIndDos)
 
-        // Obtener referencias a los Cards
-        val cardIndUno: CardView = findViewById(R.id.cardIndUno)
-        val cardIndDos: CardView = findViewById(R.id.cardIndDos)
-
-        // Obtener referencias a los TextView
-        val indUno: TextView = findViewById(R.id.indUno)
-        val textUno: TextView = findViewById(R.id.textUno)
-        val indDos: TextView = findViewById(R.id.indDos)
-        val textDos: TextView = findViewById(R.id.textDos)
-
-        val tarjetaVacia: TextView = findViewById(R.id.tarjetaVacia)
-
-        // Asignar los textos
-        indUno.text = "$cantidadRecojosTotal"
-        indDos.text = "$cantidadEntregasTotal"
-
-        Log.e("MainActivity", "Cantidad de recojos: $cantidadRecojosTotal")
-        Log.e("MainActivity", "Cantidad de entregas: $cantidadEntregasTotal")
-
-        textUno.text = if (indUno.text.equals("1")) "Recojo" else "Recojos"
-        textDos.text = if (indDos.text.equals("1")) "Entrega" else "Entregas"
-
-        cardIndUno.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
-        cardIndDos.visibility = if (cantidadEntregasTotal == 0) View.GONE else View.VISIBLE
-
-        /*if (cantidadRecojosTotal == 0 && cantidadEntregasTotal == 0) {
-            tarjetaVacia.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-            tarjetaVacia.text = "No hay pendientes"
-        } else {
-            tarjetaVacia.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
-        }*/
-
-        val horaActual = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
-        val hayRecojosOPendientes = cantidadRecojosTotal != 0 || cantidadEntregasTotal != 0
-
-        if (hayRecojosOPendientes) {
-            tarjetaVacia.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
-        } else {
-            tarjetaVacia.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-            tarjetaVacia.text = "No hay pendientes"
-        }
+        indDos.text = "$cantidadRecojosTotal"
+        val textDos: TextView = findViewById(R.id.cliente_textDos)
+        textDos.text = if (indDos.text.equals("1")) "Delivery" else "Deliverys"
+        cardIndDos.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
 
     }
 
     private fun obtenerDatosFirestore() {
-        if (rutaMotorizado.isEmpty()) {
-            Log.e("Firestore", "Error: rutaMotorizado está vacío")
+        if (phone.isEmpty()) {
+            Log.e("Firestore", "Error: phone está vacío")
             return
         }
-        // Obtener la hora actual del dispositivo
-        val calendar = Calendar.getInstance()
-        val horaActual = calendar.get(Calendar.HOUR_OF_DAY)
         // Remover listener anterior si existe
         recojosListener?.remove()
         entregasListener?.remove()
 
         // Configurar un listener en tiempo real
         recojosListener = db.collection("recojos")
-            .whereEqualTo("motorizadoRecojo", rutaMotorizado)
+            .whereEqualTo("proveedorTelefono", phone)
             .addSnapshotListener { snapshots, error ->
                 if (error != null) {
                     Log.e("Firestore", "Error al obtener documentos", error)
@@ -161,13 +168,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     return@addSnapshotListener
                 }
 
-                val documentosFiltrados = snapshots.documents.filter {
+                /*val documentosFiltrados = snapshots.documents.filter {
                     it.get("fechaRecojoPedidoMotorizado") == null && it.get("fechaAnulacionPedido") == null
-                }
+                }*/
 
                 puntosRecojoLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
 
-                documentosFiltrados.forEach { doc ->
+                snapshots.documents.forEach { doc ->
                     val id = doc.id
                     val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
                     val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
@@ -177,7 +184,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
 
                     // Obtener coordenadas
-                    val coordenadas = doc.get("recojoCoordenadas") as? Map<String, Any>
+                    val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
                     val latitud = coordenadas?.get("lat") as? Double
                     val longitud = coordenadas?.get("lng") as? Double
 
@@ -188,90 +195,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     }
                 }
 
-                /*if (horaActual >= 13) {
-                    datosCargados = true
-                    mMap?.let {
-                        actualizarMapa()
-                    }
-                }*/
-            }
-
-        /*if (horaActual >= 13) {*/
-
-            entregasListener = db.collection("recojos")
-                .whereEqualTo("motorizadoEntrega", rutaMotorizado) // Solo un filtro en Firestore
-                .addSnapshotListener { snapshots, error ->
-                    if (error != null) {
-                        Log.e("Firestore", "Error al obtener documentos", error)
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshots == null) {
-                        Log.d("Firestore", "Snapshot nulo")
-                        return@addSnapshotListener
-                    }
-
-                    val documentosFiltrados = snapshots.documents.filter {
-                        it.get("fechaRecojoPedidoMotorizado") != null && it.get("fechaEntregaPedidoMotorizado") == null && it.get("fechaAnulacionPedido") == null
-                    }
-
-                    puntosEntregaLista.clear() // Limpiar lista antes de agregar nuevas coordenadas
-                    puntosRecojoListaEspecial.clear() // Limpiar lista antes de agregar nuevas coordenadas
-
-                    documentosFiltrados.forEach { doc ->
-                        val id = doc.id
-                        val clienteNombre = doc.getString("clienteNombre") ?: "Desconocido"
-                        val proveedorNombre = doc.getString("proveedorNombre") ?: "Sin empresa"
-                        val pedidoCantidadCobrar = doc.getString("pedidoCantidadCobrar") ?: "Error"
-                        val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
-                        val fechaEntregaPedidoMotorizado =
-                            doc.getTimestamp("fechaEntregaPedidoMotorizado")
-                        val fechaRecojoPedidoMotorizado =
-                            doc.getTimestamp("fechaRecojoPedidoMotorizado")
-                        val thumbnailFotoRecojo = doc.getString("thumbnailFotoRecojo") ?: "Error"
-
-                        // Obtener coordenadas
-                        val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
-                        val latitud = coordenadas?.get("lat") as? Double
-                        val longitud = coordenadas?.get("lng") as? Double
-
-                        if (latitud != null && longitud != null) {
-                            val ubicacion = LatLng(latitud, longitud)
-                            puntosEntregaLista.add(
-                                PuntoPedido(
-                                    id,
-                                    ubicacion,
-                                    clienteNombre,
-                                    proveedorNombre,
-                                    pedidoCantidadCobrar,
-                                    pedidoMetodoPago,
-                                    fechaEntregaPedidoMotorizado,
-                                    fechaRecojoPedidoMotorizado,
-                                    thumbnailFotoRecojo
-                                )
-
-                            )
-                            Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
-
-                            /*if (motorizadoRecojo == rutaMotorizado) {
-                            Log.d("Firestore", "Pedido recogido y listo para entrega: $id")
-                            puntosRecojoListaEspecial.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, null, fechaRecojoPedidoMotorizado))
-                        } else {
-                            puntosEntregaLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado))
-                            Log.d("Firestore", "Punto entrega: $ubicacion - Cliente: $clienteNombre")
-                        }*/
-                        }
-                    }
-
-                    // Indicar que los datos están cargados
-                    datosCargados = true
-
-                    // Agregar marcadores y centrar el mapa solo si ya está inicializado
-                    mMap?.let {
-                        actualizarMapa()
-                    }
+                datosCargados = true
+                mMap?.let {
+                    actualizarMapa()
                 }
-        /*}*/
+            }
     }
 
 
@@ -324,26 +252,26 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                         kmlLayer?.addLayerToMap()
 
                         // Log para confirmar que la capa se añadió correctamente
-                        Log.d("MainActivity", "KML cargado correctamente")
+                        Log.d("ClienteMainActivity", "KML cargado correctamente")
 
                         // Verificar si hay contenedores en el KML
                         val containers = kmlLayer?.containers
                         if (containers != null) {
                             for (container in containers) {
-                                Log.d("MainActivity", "Container encontrado: ${container.hasProperties()}")
+                                Log.d("ClienteMainActivity", "Container encontrado: ${container.hasProperties()}")
                             }
                         } else {
-                            Log.d("MainActivity", "No se encontraron containers en el KML")
+                            Log.d("ClienteMainActivity", "No se encontraron containers en el KML")
                         }
                     } catch (e: Exception) {
-                        Log.e("MainActivity", "Error al procesar KML", e)
+                        Log.e("ClienteMainActivity", "Error al procesar KML", e)
                         Toast.makeText(applicationContext, "Error al procesar el mapa KML: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    Log.e("MainActivity", "Error al cargar KML", e)
+                    Log.e("ClienteMainActivity", "Error al cargar KML", e)
                     Toast.makeText(applicationContext, "Error al cargar el mapa: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -357,11 +285,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         centrarMapa()
     }
     private fun centrarMapa() {
-        if (ubicacionDisponible) {
-            obtenerUbicacionActual()
-        } else {
-            centrarMapaSinUbicacion()
-        }
+        centrarMapaSinUbicacion()
     }
     private fun agregarMarcadores() {
         mMap?.let { map ->
@@ -369,43 +293,26 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
             val boundsBuilder = LatLngBounds.Builder()
 
-            // Agregar marcadores de recojo con color AZUL
+            // Agregar marcadores de recojo con color según la fecha de entrega
             for (punto in puntosRecojoLista) {
-                val marker = map.addMarker(
-                    MarkerOptions()
-                        .position(punto.ubicacion)
-                        .title("Recojo: ${punto.proveedorNombre}")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
-                )
-                marker?.let { marcadores.add(it) } // Guardar referencia al marcador
-                boundsBuilder.include(punto.ubicacion)
-            }
+                val color = if (punto.fechaEntregaPedidoMotorizado != null) {
+                    BitmapDescriptorFactory.HUE_GREEN
+                } else {
+                    BitmapDescriptorFactory.HUE_BLUE
+                }
 
-            // Agregar marcadores de entrega con color ROJO
-            for (punto in puntosEntregaLista) {
                 val marker = map.addMarker(
                     MarkerOptions()
                         .position(punto.ubicacion)
                         .title("Entrega: ${punto.clienteNombre}")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                        .icon(BitmapDescriptorFactory.defaultMarker(color))
                 )
+
                 marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
             }
 
-            for (punto in puntosRecojoListaEspecial) {
-                val marker = map.addMarker(
-                    MarkerOptions()
-                        .position(punto.ubicacion)
-                        .title("Entrega: ${punto.clienteNombre}")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-                )
-                marker?.let { marcadores.add(it) } // Guardar referencia al marcador
-                boundsBuilder.include(punto.ubicacion)
-            }
-
-            // Ajustar el zoom si hay al menos un marcador
-            if (puntosRecojoLista.isNotEmpty() || puntosEntregaLista.isNotEmpty() || puntosRecojoListaEspecial.isNotEmpty()) {
+            if (puntosRecojoLista.isNotEmpty()) {
                 val bounds = boundsBuilder.build()
                 val padding = 100 // Espaciado en píxeles alrededor de los puntos
                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
@@ -413,7 +320,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
     private fun centrarMapaConUbicacion(ubicacionUsuario: LatLng) {
-        if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty() && puntosRecojoListaEspecial.isEmpty() && mMap != null) {
+        //if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty() && puntosRecojoListaEspecial.isEmpty() && mMap != null) {
+        if (puntosRecojoLista.isEmpty() && mMap != null) {
             // Si no hay marcadores, centrar solo en la ubicación del usuario
             mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 15f))
             return
@@ -436,11 +344,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
 
             // Incluir todas las coordenadas de los puntos de entrega solo si la lista no es nula ni está vacía
-            if (!puntosRecojoListaEspecial.isNullOrEmpty()) {
+            /*if (!puntosRecojoListaEspecial.isNullOrEmpty()) {
                 for (punto in puntosRecojoListaEspecial) {
                     boundsBuilder.include(punto.ubicacion)
                 }
-            }
+            }*/
 
             // Obtener los límites y mover la cámara
             val bounds = boundsBuilder.build()
@@ -450,7 +358,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 try {
                     mMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                 } catch (e: Exception) {
-                    Log.e("MainActivity", "Error en animateCamera con ubicación", e)
+                    Log.e("ClienteMainActivity", "Error en animateCamera con ubicación", e)
                     try {
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                     } catch (e2: Exception) {
@@ -459,15 +367,46 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }, 300)
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error al centrar mapa con ubicación", e)
+            Log.e("ClienteMainActivity", "Error al centrar mapa con ubicación", e)
             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacionUsuario, 12f))
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Verificar si el mapa ya está inicializado
+        if (mapaListo) {
+            centrarMapaSinUbicacion()
+        }
+    }
+    private fun limpiarSoloMarcadores() {
+        // Eliminar todos los marcadores guardados en la lista
+        for (marker in marcadores) {
+            marker.remove()
+        }
+        marcadores.clear()
+    }
     private fun centrarMapaSinUbicacion() {
-        if (puntosRecojoLista.isEmpty() && puntosEntregaLista.isEmpty()) {
-            Log.d("MainActivity", "No hay coordenadas para centrar el mapa")
+        if (puntosRecojoLista.isEmpty()) {
+            Log.d("ClienteMainActivity", "No hay coordenadas para centrar el mapa")
             return
         }
+        val listaRecojos = puntosRecojoLista.map { punto ->
+            Recojo(
+                id = punto.id,
+                clienteNombre = punto.clienteNombre,
+                proveedorNombre = punto.proveedorNombre,
+                pedidoCantidadCobrar = punto.pedidoCantidadCobrar,
+                pedidoMetodoPago = punto.pedidoMetodoPago,
+                fechaEntregaPedidoMotorizado = punto.fechaEntregaPedidoMotorizado,
+                fechaRecojoPedidoMotorizado = punto.fechaRecojoPedidoMotorizado,
+                thumbnailFotoRecojo = punto.thumbnailFotoRecojo
+            )
+        }
+
+        // Actualizar la lista en el adaptador
+        adapter.actualizarLista(listaRecojos)
+        actualizarIndicadores()
 
         try {
             val boundsBuilder = LatLngBounds.Builder()
@@ -479,14 +418,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 hayPuntos = true
             }
 
-            // Incluir todas las coordenadas de los puntos de entrega
-            for (punto in puntosEntregaLista) {
-                boundsBuilder.include(punto.ubicacion)
-                hayPuntos = true
-            }
-
             if (!hayPuntos) {
-                Log.d("MainActivity", "No hay coordenadas válidas para centrar el mapa")
+                Log.d("ClienteMainActivity", "No hay coordenadas válidas para centrar el mapa")
                 return
             }
 
@@ -498,38 +431,23 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 try {
                     mMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                 } catch (e: Exception) {
-                    Log.e("MainActivity", "Error en animateCamera", e)
+                    Log.e("ClienteMainActivity", "Error en animateCamera", e)
                     try {
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
                     } catch (e2: Exception) {
                         // Si todo falla, centrar en la primera coordenada disponible
-                        val primerPunto = if (puntosRecojoLista.isNotEmpty()) {
-                            puntosRecojoLista[0].ubicacion
-                        } else {
-                            puntosEntregaLista[0].ubicacion
-                        }
+                        val primerPunto = puntosRecojoLista[0].ubicacion
                         mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(primerPunto, 12f))
                     }
                 }
             }, 300)
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error al centrar mapa", e)
+            Log.e("ClienteMainActivity", "Error al centrar mapa", e)
             Handler(Looper.getMainLooper()).postDelayed({
-                val primerPunto = if (puntosRecojoLista.isNotEmpty()) {
-                    puntosRecojoLista[0].ubicacion
-                } else {
-                    puntosEntregaLista[0].ubicacion
-                }
+                val primerPunto = puntosRecojoLista[0].ubicacion
                 mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(primerPunto, 12f))
             }, 300)
         }
-    }
-    private fun limpiarSoloMarcadores() {
-        // Eliminar todos los marcadores guardados en la lista
-        for (marker in marcadores) {
-            marker.remove()
-        }
-        marcadores.clear()
     }
     private fun activarUbicacionUsuario() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -545,97 +463,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 // La ubicación está activada, intentar obtener la posición actual
                 ubicacionDisponible = true
                 obtenerUbicacionActual()
-            }
-        }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        rutaMotorizado = intent.getStringExtra("ruta") ?: ""
-        Log.d("MainActivity", "Ruta recibida: $rutaMotorizado")
-
-        escucharCambiosEnUsuario()
-
-        // Inicializar el mapa
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.map_container) as? SupportMapFragment
-        mapFragment?.getMapAsync(this)
-
-        // Configurar RecyclerView
-        recyclerView = findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = MiAdapter(emptyList())  // Inicialmente vacío
-        recyclerView.adapter = adapter
-
-        // Cargar datos desde Firestore
-        obtenerDatosFirestore()
-
-        // Inicializar DrawerLayout
-        drawerLayout = findViewById(R.id.drawer_layout)
-        val navView = findViewById<NavigationView>(R.id.nav_view)
-
-        // Configurar listener para el botón flotante
-        val fabMenu = findViewById<FloatingActionButton>(R.id.fab_menu)
-        fabMenu.visibility = GONE
-        /*fabMenu.setOnClickListener {
-            if (!drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                drawerLayout.openDrawer(GravityCompat.START)
-            }
-        }*/
-
-        // Configurar navegación del menú lateral
-        navView.setNavigationItemSelectedListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.nav_home -> showToast("Inicio")
-                R.id.nav_profile -> showToast("Perfil")
-                R.id.nav_settings -> showToast("Configuración")
-                R.id.nav_about -> showToast("Acerca de")
-            }
-            drawerLayout.closeDrawer(GravityCompat.START)
-            true
-        }
-
-        actualizarIndicadores()
-
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        // Verificar si el mapa ya está inicializado
-        if (mapaListo) {
-            // Verificar permisos de ubicación
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-
-                // Activar la capa de "Mi ubicación" en el mapa
-                mMap?.isMyLocationEnabled = true
-
-                // Verificar si el servicio de ubicación está activado
-                val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                    locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-
-                    // Actualizar el estado de la ubicación
-                    ubicacionDisponible = true
-
-                    // Intentar obtener la ubicación y centrar el mapa
-                    Log.d("MainActivity", "onResume: Intentando actualizar ubicación")
-                    obtenerUbicacionActual()
-                } else {
-                    // Los servicios de ubicación están desactivados
-                    ubicacionDisponible = false
-                    // No mostramos el diálogo aquí para evitar mostrarlo cada vez que se reanude la actividad
-                    // Solo centramos el mapa con los marcadores
-                    //centrarMapaSinUbicacion()
-                    mostrarDialogoActivarUbicacion()
-                }
-            } else {
-                // No tenemos permisos de ubicación
-                Log.d("MainActivity", "onResume: Sin permisos de ubicación")
-                ubicacionDisponible = false
-                activarUbicacionUsuario()
             }
         }
     }
@@ -684,18 +511,18 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
 
             if (lastKnownLocation != null) {
-                //Log.d("MainActivity", "Ubicación obtenida: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
+                //Log.d("ClienteMainActivity", "Ubicación obtenida: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
                 val ubicacionUsuario = LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
                 centrarMapaConUbicacion(ubicacionUsuario)
                 actualizarListaOrdenada(ubicacionUsuario)
             } else {
-                Log.d("MainActivity", "No se pudo obtener la ubicación actual")
+                Log.d("ClienteMainActivity", "No se pudo obtener la ubicación actual")
                 // Si no hay ubicación disponible, centrar solo con marcadores
                 ubicacionDisponible = false
                 centrarMapaSinUbicacion()
             }
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error al obtener ubicación", e)
+            Log.e("ClienteMainActivity", "Error al obtener ubicación", e)
             ubicacionDisponible = false
             centrarMapaSinUbicacion()
         }
@@ -751,27 +578,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         if (permisosNecesarios.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permisosNecesarios.toTypedArray(), LOCATION_PERMISSION_REQUEST_CODE)
-        } else {
-            // Todos los permisos ya fueron concedidos
-            activarUbicacionUsuario()
         }
     }
 
+    // Manejar la respuesta del usuario
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                // Todos los permisos concedidos
                 activarUbicacionUsuario()
             } else {
-                ubicacionDisponible = false
-                showToast("Permiso de ubicación denegado")
-
-                // Verificar si el usuario seleccionó "No volver a preguntar"
-                if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    mostrarDialogoPermisoDenegado()
-                } else {
-                    solicitarPermisoUbicacion()
-                }
+                // Algún permiso fue denegado
+                Toast.makeText(this, "Debe conceder todos los permisos para continuar", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -848,19 +668,19 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         Log.e("listaCombinada", "listaCombinada1: $listaCombinada")
 
         /*if (horaActual >= 13) {*/
-            val puntosEntregaConDistancia = puntosEntregaLista.map { punto ->
-                val resultado = FloatArray(1)
-                Location.distanceBetween(
-                    ubicacionUsuario.latitude, ubicacionUsuario.longitude,
-                    punto.ubicacion.latitude, punto.ubicacion.longitude,
-                    resultado
-                )
-                punto to resultado[0]
-            }
+        val puntosEntregaConDistancia = puntosEntregaLista.map { punto ->
+            val resultado = FloatArray(1)
+            Location.distanceBetween(
+                ubicacionUsuario.latitude, ubicacionUsuario.longitude,
+                punto.ubicacion.latitude, punto.ubicacion.longitude,
+                resultado
+            )
+            punto to resultado[0]
+        }
 
-            // Combinamos ambas listas
-            listaCombinada.addAll(puntosEntregaConDistancia)
-            Log.e("listaCombinada", "listaCombinada2: $listaCombinada")
+        // Combinamos ambas listas
+        listaCombinada.addAll(puntosEntregaConDistancia)
+        Log.e("listaCombinada", "listaCombinada2: $listaCombinada")
         /*}*/
 
         // Ordenamos la lista combinada por distancia
@@ -880,9 +700,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onDestroy() {
         super.onDestroy()
+        val sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("modal_mostrado", false).apply()
         usuarioListener?.remove()
         recojosListener?.remove() // Añadir esta línea
         entregasListener?.remove()
+
     }
 
 

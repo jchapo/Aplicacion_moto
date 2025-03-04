@@ -115,16 +115,27 @@ class LoginActivity : AppCompatActivity() {
                     val document = documents.documents[0]
                     val rol = document.getString("rol") ?: "Usuario"
                     val ruta = document.getString("ruta") ?: ""  // Obtén la ruta desde Firestore
+                    val nombre = document.getString("name") ?:""
+                    val phone = document.getString("phone") ?:""
+                    val nombreEmpresa = document.getString("nombreEmpresa") ?:""
 
                     if (rol == "Motorizado") {
-                        Toast.makeText(this, "Bienvenido Motorizado", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Bienvenido $nombre", Toast.LENGTH_LONG).show()
                         val intent = Intent(this, MainActivity::class.java).apply {
                             putExtra("ruta", ruta)  // Pasa la variable "ruta"
                         }
                         startActivity(intent)
                         finish()
+                    } else if (rol == "Cliente") {
+                        Toast.makeText(this, "Bienvenido $nombre ", Toast.LENGTH_LONG).show()
+                        val intent = Intent(this, ClienteMainActivity::class.java).apply {
+                            putExtra("phone", phone)  // Pasa la variable "phone"
+                            putExtra("nombreEmpresa", nombreEmpresa)  // Pasa la variable "nombreEmpresa"
+                        }
+                        startActivity(intent)
+                        finish()
                     } else {
-                        Toast.makeText(this, "No eres motorizado", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Hubo un error", Toast.LENGTH_LONG).show()
                         auth.signOut()  // ❌ Cerrar sesión
                     }
                 } else {

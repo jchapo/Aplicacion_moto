@@ -50,6 +50,12 @@
         </activity>
 
         <activity
+            android:name=".MainActivity"
+            android:exported="true" />
+
+        <activity android:name=".DetalleRecojoActivity" />
+
+        <activity
             android:name=".EditClientDistrictActivity"
             android:exported="false">
             <meta-data
@@ -58,11 +64,11 @@
         </activity>
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ClienteMainActivity"
             android:exported="true" />
 
-        <activity android:name=".DetalleRecojoActivity" />
-
+        <activity android:name=".ClienteDetalleRecojoActivity" />
+        <activity android:name=".CreateOrderActivity" />
 
     </application>
 
