@@ -69,10 +69,10 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var nombreEmpresa: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoPedido(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String)
-    private val puntosRecojoLista = mutableListOf<PuntoPedido>()
-    private val puntosRecojoListaEspecial = mutableListOf<PuntoPedido>()
-    private val puntosEntregaLista = mutableListOf<PuntoPedido>()
+    data class PuntoPedidoCliente(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String, val fechaAnulaciónPedido: Timestamp?)
+    private val puntosRecojoLista = mutableListOf<PuntoPedidoCliente>()
+    private val puntosRecojoListaEspecial = mutableListOf<PuntoPedidoCliente>()
+    private val puntosEntregaLista = mutableListOf<PuntoPedidoCliente>()
     private var kmlLayer: KmlLayer? = null
     private val marcadores = mutableListOf<Marker>() // Lista para guardar referencia a todos los marcadores
 
@@ -134,16 +134,41 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun actualizarIndicadores() {
         val cantidadPuntosRecojo = puntosRecojoLista.size
-        val cantidadRecojosTotal = cantidadPuntosRecojo
+
+        // Contar puntos anulados (fechaAnulaciónPedido != null)
+        val cantidadAnulados = puntosRecojoLista.count { it.fechaAnulaciónPedido != null }
+
+        // Contar puntos finalizados (fechaEntregaPedidoMotorizado != null)
+        val cantidadFinalizados = puntosRecojoLista.count { it.fechaEntregaPedidoMotorizado != null }
+
+        // Calcular los faltantes (total - finalizados - anulados)
+        val cantidadFaltantes = cantidadPuntosRecojo - cantidadFinalizados - cantidadAnulados
+
+        // Actualizar CardUno (Anulados)
+        val indUno: TextView = findViewById(R.id.cliente_indUno)
+        val cardIndUno: CardView = findViewById(R.id.cliente_cardIndUno)
+        indUno.text = "$cantidadAnulados"
+        val textUno: TextView = findViewById(R.id.cliente_textUno)
+        textUno.text = if (cantidadAnulados == 1) "Anulado" else "Anulados"
+        cardIndUno.visibility = if (cantidadAnulados == 0) View.GONE else View.VISIBLE
+
+        // Actualizar CardDos (Faltantes)
         val indDos: TextView = findViewById(R.id.cliente_indDos)
         val cardIndDos: CardView = findViewById(R.id.cliente_cardIndDos)
-
-        indDos.text = "$cantidadRecojosTotal"
+        indDos.text = "$cantidadFaltantes"
         val textDos: TextView = findViewById(R.id.cliente_textDos)
-        textDos.text = if (indDos.text.equals("1")) "Delivery" else "Deliverys"
-        cardIndDos.visibility = if (cantidadRecojosTotal == 0) View.GONE else View.VISIBLE
+        textDos.text = if (cantidadFaltantes == 1) "Faltante" else "Faltantes"
+        cardIndDos.visibility = if (cantidadFaltantes == 0) View.GONE else View.VISIBLE
 
+        // Actualizar CardTres (Finalizados)
+        val indTres: TextView = findViewById(R.id.cliente_indTres)
+        val cardIndTres: CardView = findViewById(R.id.cliente_cardIndTres)
+        indTres.text = "$cantidadFinalizados"
+        val textTres: TextView = findViewById(R.id.cliente_textTres)
+        textTres.text = if (cantidadFinalizados == 1) "Listo" else "Listos"
+        cardIndTres.visibility = if (cantidadFinalizados == 0) View.GONE else View.VISIBLE
     }
+
 
     private fun obtenerDatosFirestore() {
         if (phone.isEmpty()) {
@@ -182,6 +207,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
                     val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
                     val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
+                    val fechaAnulaciónPedido = doc.getTimestamp("fechaAnulaciónPedido")
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
@@ -190,7 +216,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoPedido(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, ""))
+                        puntosRecojoLista.add(PuntoPedidoCliente(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, "",fechaAnulaciónPedido))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
                 }
