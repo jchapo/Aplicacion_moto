@@ -1,4 +1,4 @@
-package com.example.moto_version
+package com.example.moto_version.moto
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,15 +13,12 @@ import androidx.core.content.ContextCompat
 import com.example.moto_version.models.Item
 import com.google.firebase.firestore.FirebaseFirestore
 import android.Manifest
-import android.app.Activity
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.os.Build
 import android.provider.MediaStore
-import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -31,6 +28,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import com.bumptech.glide.Glide
+import com.example.moto_version.R
+import com.example.moto_version.cliente.EditClientDistrictActivity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage

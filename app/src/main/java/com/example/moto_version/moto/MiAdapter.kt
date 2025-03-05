@@ -1,4 +1,4 @@
-package com.example.moto_version
+package com.example.moto_version.moto
 
 import android.content.Intent
 import android.view.LayoutInflater
@@ -10,9 +10,10 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.moto_version.R
 import com.example.moto_version.models.Recojo
 
-class ClienteMiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<ClienteMiAdapter.ViewHolder>() {
+class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<MiAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imagenRecojoItem: ImageView = view.findViewById(R.id.imagenRecojoItem)
@@ -47,15 +48,22 @@ class ClienteMiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Ad
 
 
         // Verificar si la fecha de recojo es diferente de null
-        if (recojo.fechaEntregaPedidoMotorizado != null) {
+        if (recojo.fechaRecojoPedidoMotorizado != null) {
             // Si es distinto de null, cambiar el color de fondo del CardView usando backgroundTint
-            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.green)
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context,
+                R.color.md_theme_errorContainer
+            )
+        } else {
+            // Si es null, usar otro color (o el color predeterminado)
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context,
+                R.color.md_theme_primaryContainer
+            )
         }
 
         // Agregar clic para abrir una nueva actividad
         holder.itemView.setOnClickListener {
             val context = it.context
-            val intent = Intent(context, ClienteDetalleRecojoActivity::class.java).apply {
+            val intent = Intent(context, DetalleRecojoActivity::class.java).apply {
                 putExtra("id", recojo.id)
                 putExtra("clienteNombre", recojo.clienteNombre)
                 putExtra("proveedorNombre", recojo.proveedorNombre)

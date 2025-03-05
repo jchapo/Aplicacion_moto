@@ -1,6 +1,7 @@
-package com.example.moto_version
+package com.example.moto_version.gimi
 
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,13 +11,15 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.moto_version.models.Recojo
+import com.example.moto_version.moto.DetalleRecojoActivity
+import com.example.moto_version.R
+import com.example.moto_version.models.ClienteRecojo
 
-class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<MiAdapter.ViewHolder>() {
+class GimiMiAdapter(private var listaRecojos: List<ClienteRecojo>) : RecyclerView.Adapter<GimiMiAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imagenRecojoItem: ImageView = view.findViewById(R.id.imagenRecojoItem)
-        val tvClienteNombre: TextView = view.findViewById(R.id.tvClienteNombre)
+        val tvGimiNombre: TextView = view.findViewById(R.id.tvClienteNombre)
         val tvProveedorNombre: TextView = view.findViewById(R.id.tvProveedorNombre)
         val tvPrecio: TextView = view.findViewById(R.id.tvPrecio)
         val itemCard: CardView = view.findViewById(R.id.itemCard)
@@ -30,9 +33,10 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val recojo = listaRecojos[position]
 
-        holder.tvClienteNombre.text = recojo.clienteNombre
+        holder.tvGimiNombre.text = recojo.clienteNombre
         holder.tvProveedorNombre.text = recojo.proveedorNombre
         holder.tvPrecio.text = "S/ ${recojo.pedidoCantidadCobrar}"
+        Log.d("GlideDebug", "URL de la imagen: ${recojo.thumbnailFotoRecojo}")
         if (recojo.fechaRecojoPedidoMotorizado != null) {
             // Cargar la imagen desde thumbnailFotoRecojo si la fecha no es null
             Glide.with(holder.itemView.context)
@@ -46,14 +50,36 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         }
 
 
-        // Verificar si la fecha de recojo es diferente de null
-        if (recojo.fechaRecojoPedidoMotorizado != null) {
-            // Si es distinto de null, cambiar el color de fondo del CardView usando backgroundTint
-            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.md_theme_errorContainer)
-        } else {
-            // Si es null, usar otro color (o el color predeterminado)
-            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context, R.color.md_theme_primaryContainer)
+        // Verificar si el pedido está anulado
+        if (recojo.fechaAnulacionPedido != null) {
+            // Si está anulado, cambiar el color de fondo del CardView a rojo
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(
+                holder.itemView.context, R.color.md_theme_errorContainer
+            )
         }
+        // Verificar si el pedido ha sido entregado
+        else if (recojo.fechaEntregaPedidoMotorizado != null) {
+            // Si ha sido entregado, cambiar el color de fondo del CardView a verde
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(
+                holder.itemView.context, R.color.green
+            )
+        }
+        // Verificar si el pedido ha sido recogido pero aún no entregado
+        else if (recojo.fechaRecojoPedidoMotorizado != null) {
+            // Si ha sido recogido, pero no entregado, cambiar el color a azul
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(
+                holder.itemView.context, R.color.md_theme_primaryFixedDim
+            )
+        }
+    // Pedido aún no recogido
+        else {
+            // Si el pedido no ha sido recogido, cambiar el color a amarillo
+            holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(
+                holder.itemView.context, R.color.amarillo
+            )
+        }
+
+
 
         // Agregar clic para abrir una nueva actividad
         holder.itemView.setOnClickListener {
@@ -73,9 +99,8 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
 
     override fun getItemCount(): Int = listaRecojos.size
 
-    fun actualizarLista(nuevaLista: List<Recojo>) {
+    fun actualizarLista(nuevaLista: List<ClienteRecojo>) {
         listaRecojos = nuevaLista
         notifyDataSetChanged()
     }
 }
-

@@ -1,4 +1,4 @@
-package com.example.moto_version
+package com.example.moto_version.moto
 
 import android.os.Bundle
 import android.util.Log
@@ -38,6 +38,8 @@ import android.view.View.GONE
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
+import com.example.moto_version.LoginActivity
+import com.example.moto_version.R
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.Timestamp
@@ -46,7 +48,6 @@ import com.google.maps.android.data.kml.KmlLayer
 import kotlinx.coroutines.CoroutineScope
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection

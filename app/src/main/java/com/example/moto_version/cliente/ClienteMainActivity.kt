@@ -1,14 +1,12 @@
-package com.example.moto_version
+package com.example.moto_version.cliente
 
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.moto_version.models.Recojo
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -34,10 +32,13 @@ import android.content.Context
 import android.net.Uri
 import android.provider.Settings
 import android.view.View
-import android.view.View.GONE
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
+import com.example.moto_version.LoginActivity
+import com.example.moto_version.R
+import com.example.moto_version.gimi.GimiMiAdapter
+import com.example.moto_version.models.ClienteRecojo
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.Timestamp
@@ -46,7 +47,6 @@ import com.google.maps.android.data.kml.KmlLayer
 import kotlinx.coroutines.CoroutineScope
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
@@ -57,7 +57,7 @@ private const val REQUEST_LOCATION_SETTINGS = 1002
 class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: ClienteMiAdapter
+    private lateinit var adapter: GimiMiAdapter
     private var mMap: GoogleMap? = null
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
@@ -69,7 +69,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
     private var nombreEmpresa: String = ""
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
-    data class PuntoPedidoCliente(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String, val fechaAnulaciónPedido: Timestamp?)
+    data class PuntoPedidoCliente(val id: String, val ubicacion: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String, val fechaAnulacionPedido: Timestamp?)
     private val puntosRecojoLista = mutableListOf<PuntoPedidoCliente>()
     private val puntosRecojoListaEspecial = mutableListOf<PuntoPedidoCliente>()
     private val puntosEntregaLista = mutableListOf<PuntoPedidoCliente>()
@@ -104,7 +104,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
         // Configurar RecyclerView
         recyclerView = findViewById(R.id.cliente_recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = ClienteMiAdapter(emptyList())  // Inicialmente vacío
+        adapter = GimiMiAdapter(emptyList())  // Inicialmente vacío
         recyclerView.adapter = adapter
 
         // Cargar datos desde Firestore
@@ -135,8 +135,8 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun actualizarIndicadores() {
         val cantidadPuntosRecojo = puntosRecojoLista.size
 
-        // Contar puntos anulados (fechaAnulaciónPedido != null)
-        val cantidadAnulados = puntosRecojoLista.count { it.fechaAnulaciónPedido != null }
+        // Contar puntos anulados (fechaAnulacionPedido != null)
+        val cantidadAnulados = puntosRecojoLista.count { it.fechaAnulacionPedido != null }
 
         // Contar puntos finalizados (fechaEntregaPedidoMotorizado != null)
         val cantidadFinalizados = puntosRecojoLista.count { it.fechaEntregaPedidoMotorizado != null }
@@ -207,7 +207,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val pedidoMetodoPago = doc.getString("pedidoMetodoPago") ?: "Error"
                     val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
                     val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
-                    val fechaAnulaciónPedido = doc.getTimestamp("fechaAnulaciónPedido")
+                    val fechaAnulacionPedido = doc.getTimestamp("fechaAnulacionPedido")
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
@@ -216,7 +216,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoPedidoCliente(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, "",fechaAnulaciónPedido))
+                        puntosRecojoLista.add(PuntoPedidoCliente(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, "",fechaAnulacionPedido))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
                 }
@@ -418,7 +418,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
         val listaRecojos = puntosRecojoLista.map { punto ->
-            Recojo(
+            ClienteRecojo(
                 id = punto.id,
                 clienteNombre = punto.clienteNombre,
                 proveedorNombre = punto.proveedorNombre,
@@ -426,7 +426,8 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
                 pedidoMetodoPago = punto.pedidoMetodoPago,
                 fechaEntregaPedidoMotorizado = punto.fechaEntregaPedidoMotorizado,
                 fechaRecojoPedidoMotorizado = punto.fechaRecojoPedidoMotorizado,
-                thumbnailFotoRecojo = punto.thumbnailFotoRecojo
+                thumbnailFotoRecojo = punto.thumbnailFotoRecojo,
+                fechaAnulacionPedido = punto.fechaAnulacionPedido
             )
         }
 
@@ -540,7 +541,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
                 //Log.d("ClienteMainActivity", "Ubicación obtenida: ${lastKnownLocation.latitude}, ${lastKnownLocation.longitude}")
                 val ubicacionUsuario = LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
                 centrarMapaConUbicacion(ubicacionUsuario)
-                actualizarListaOrdenada(ubicacionUsuario)
+                //actualizarListaOrdenada(ubicacionUsuario)
             } else {
                 Log.d("ClienteMainActivity", "No se pudo obtener la ubicación actual")
                 // Si no hay ubicación disponible, centrar solo con marcadores
@@ -652,76 +653,6 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
                 centrarMapaSinUbicacion()
             }
         }
-    }
-
-    private fun actualizarListaOrdenada(ubicacionUsuario: LatLng) {
-        // Obtenemos la hora actual del dispositivo
-        val horaActual = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
-        // Verificamos si puntosRecojoListaEspecial no está vacío antes de calcular distancias
-        val puntosRecojoConDistanciaEspecial = if (puntosRecojoListaEspecial.isNotEmpty()) {
-            puntosRecojoListaEspecial.map { punto ->
-                val resultado = FloatArray(1)
-                Location.distanceBetween(
-                    ubicacionUsuario.latitude, ubicacionUsuario.longitude,
-                    punto.ubicacion.latitude, punto.ubicacion.longitude,
-                    resultado
-                )
-                punto to resultado[0]
-            }
-        } else {
-            emptyList() // Si está vacío, devuelve una lista vacía
-        }
-
-        Log.e("listaCombinada", "puntosRecojoConDistanciaEspecial: $puntosRecojoConDistanciaEspecial")
-
-        // Calculamos las distancias para puntosRecojoLista
-        val puntosRecojoConDistancia = puntosRecojoLista.map { punto ->
-            val resultado = FloatArray(1)
-            Location.distanceBetween(
-                ubicacionUsuario.latitude, ubicacionUsuario.longitude,
-                punto.ubicacion.latitude, punto.ubicacion.longitude,
-                resultado
-            )
-            punto to resultado[0]
-        }
-
-        // Lista combinada solo si hay elementos en puntosRecojoListaEspecial
-        val listaCombinada = puntosRecojoConDistancia.toMutableList()
-        if (puntosRecojoConDistanciaEspecial.isNotEmpty()) {
-            listaCombinada.addAll(puntosRecojoConDistanciaEspecial)
-        }
-        Log.e("listaCombinada", "listaCombinada1: $listaCombinada")
-
-        /*if (horaActual >= 13) {*/
-        val puntosEntregaConDistancia = puntosEntregaLista.map { punto ->
-            val resultado = FloatArray(1)
-            Location.distanceBetween(
-                ubicacionUsuario.latitude, ubicacionUsuario.longitude,
-                punto.ubicacion.latitude, punto.ubicacion.longitude,
-                resultado
-            )
-            punto to resultado[0]
-        }
-
-        // Combinamos ambas listas
-        listaCombinada.addAll(puntosEntregaConDistancia)
-        Log.e("listaCombinada", "listaCombinada2: $listaCombinada")
-        /*}*/
-
-        // Ordenamos la lista combinada por distancia
-        val listaOrdenada = listaCombinada.sortedBy { it.second }
-        Log.e("listaCombinada", "listaCombinada3: $listaCombinada")
-
-
-        // Convertimos a la lista final para el adaptador
-        val listaFinal = listaOrdenada.map { (punto, _) ->
-            Recojo(punto.id, punto.clienteNombre, punto.proveedorNombre, punto.pedidoCantidadCobrar, punto.pedidoMetodoPago, punto.fechaEntregaPedidoMotorizado, punto.fechaRecojoPedidoMotorizado, punto.thumbnailFotoRecojo)
-        }
-
-        // Actualizamos el adaptador con la lista final
-        adapter.actualizarLista(listaFinal)
-        actualizarIndicadores()
     }
 
     override fun onDestroy() {

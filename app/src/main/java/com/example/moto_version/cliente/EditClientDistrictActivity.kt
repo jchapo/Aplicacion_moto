@@ -1,7 +1,6 @@
-package com.example.moto_version
+package com.example.moto_version.cliente
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -21,8 +20,8 @@ import java.util.regex.Pattern
 import java.net.URLDecoder
 import android.util.Log
 import android.widget.LinearLayout
-import com.google.type.LatLng
-import java.net.URL
+import com.example.moto_version.BuildConfig
+import com.example.moto_version.R
 import java.net.URLEncoder
 import okhttp3.OkHttpClient
 import okhttp3.Request

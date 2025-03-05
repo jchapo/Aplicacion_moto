@@ -1,4 +1,4 @@
-package com.example.moto_version
+package com.example.moto_version.cliente
 
 import android.app.Dialog
 import android.graphics.Color
@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.DialogFragment
+import com.example.moto_version.R
 
 class AnuncioDialogFragment : DialogFragment() {
 

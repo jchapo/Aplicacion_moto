@@ -1,4 +1,4 @@
-package com.example.moto_version
+package com.example.moto_version.cliente
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -12,6 +12,8 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.moto_version.BuildConfig
+import com.example.moto_version.R
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -303,12 +305,16 @@ class CreateOrderActivity : AppCompatActivity() {
 
         // Obtener coordenadas
         btnObtenerCoordenadasProveedor.setOnClickListener {
-            tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity, R.color.gris))
+            tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+                R.color.gris
+            ))
             obtenerCoordenadas(true)
         }
 
         btnObtenerCoordenadasCliente.setOnClickListener {
-            tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity, R.color.gris))
+            tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+                R.color.gris
+            ))
             obtenerCoordenadas(false)
         }
 
@@ -454,10 +460,14 @@ class CreateOrderActivity : AppCompatActivity() {
                 if (coordenadas != null) {
                     if (isProveedor) {
                         coordenadasProveedor = Pair(coordenadas.latitud, coordenadas.longitud)
-                        tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity, R.color.verde_claro))
+                        tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+                            R.color.verde_claro
+                        ))
                     } else {
                         coordenadasCliente = Pair(coordenadas.latitud, coordenadas.longitud)
-                        tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity, R.color.verde_claro))
+                        tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+                            R.color.verde_claro
+                        ))
                     }
                     //tvCoordenadas.text = "Lat: ${coordenadas.first}, Lng: ${coordenadas.second}"
                     tvCoordenadas.text = "¡Coordenadas obtenidas con éxito!"
@@ -621,7 +631,7 @@ class CreateOrderActivity : AppCompatActivity() {
             "clienteNombre" to capitalizeName(etClienteNombre.text.toString()),
             "clienteTelefono" to clienteTelefono,
             "comisionTarifa" to comisionTarifa,
-            "fechaAnulaciónPedido" to null,
+            "fechaAnulacionPedido" to null,
             "fechaCreacionPedido" to Date(),
             "fechaEntregaPedido" to fechaEntrega,
             "fechaEntregaPedidoMotorizado" to null,

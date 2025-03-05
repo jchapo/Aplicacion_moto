@@ -3,9 +3,11 @@ package com.example.moto_version
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.moto_version.cliente.ClienteMainActivity
+import com.example.moto_version.gimi.GimiMainActivity
+import com.example.moto_version.moto.MainActivity
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -134,6 +136,12 @@ class LoginActivity : AppCompatActivity() {
                         }
                         startActivity(intent)
                         finish()
+                    } else if(rol == "Gimi"){
+                        Toast.makeText(this, "Bienvenido $nombre", Toast.LENGTH_LONG).show()
+                        val intent = Intent(this, GimiMainActivity::class.java).apply {
+                            putExtra("phone", phone)  // Pasa la variable "phone"
+                        }
+                        startActivity(intent)
                     } else {
                         Toast.makeText(this, "Hubo un error", Toast.LENGTH_LONG).show()
                         auth.signOut()  // ❌ Cerrar sesión

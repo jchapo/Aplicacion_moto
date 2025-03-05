@@ -2,7 +2,7 @@ package com.example.moto_version.models;
 
 import com.google.firebase.Timestamp
 
-data class Recojo(
+data class ClienteRecojo(
     val id: String ="",
     val clienteNombre: String = "",
     val proveedorNombre: String = "",
@@ -12,4 +12,4 @@ data class Recojo(
     val fechaRecojoPedidoMotorizado: Timestamp? = null,
     val thumbnailFotoRecojo: String = "",
     val fechaAnulacionPedido: Timestamp? = null
-    )
+)
