@@ -20,6 +20,7 @@ import android.graphics.Matrix
 import android.os.Build
 import android.provider.MediaStore
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -38,7 +39,8 @@ import com.google.firebase.Timestamp
 import java.io.File
 import java.io.InputStream
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-
+import com.example.moto_version.SessionManager
+import com.example.moto_version.cliente.OrderFormActivity
 
 
 class DetalleRecojoActivity : AppCompatActivity() {
@@ -48,6 +50,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private lateinit var btnCamara: ImageButton
     private lateinit var btnCheck: ImageButton
     private lateinit var btnEditarCliente: ImageButton
+    private lateinit var btnEditarPedido: ImageButton
     private lateinit var imagenRecojo: ImageView
     private lateinit var imagenEntrega: ImageView
     private lateinit var tvDetalleScroll: ScrollView
@@ -55,6 +58,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private var seEntregoImagen: Boolean = false
     private var seSubioRecogioImagen: Boolean = false
     private var seSubioEntregaImagen: Boolean = false
+    private var nombreEmpresa = SessionManager.nombreEmpresa ?: ""
+    private var orderId: String = ""
 
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
@@ -64,7 +69,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalle_recojo)
 
-        val id = intent.getStringExtra("id")
+        val id = intent.getStringExtra("id") ?: ""
+        orderId = id
         val clienteNombre = intent.getStringExtra("clienteNombre")
         val proveedorNombre = intent.getStringExtra("proveedorNombre")
         val pedidoMetodoPago = intent.getStringExtra("pedidoMetodoPago")
@@ -98,6 +104,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val btnTelefonoProveedor = findViewById<ImageButton>(R.id.btnTelefonoProveedor)
         val btnWhatsappCliente = findViewById<ImageButton>(R.id.btnWhatsappCliente)
         val btnWhatsappProveedor = findViewById<ImageButton>(R.id.btnWhatsappProveedor)
+        val frameEditarPedido = findViewById<FrameLayout>(R.id.frameEditarPedido)
         btnCamara = findViewById<ImageButton>(R.id.btnCamara)
 
         val btnMapsPedido = findViewById<ImageButton>(R.id.btnMapsCliente)
@@ -107,6 +114,18 @@ class DetalleRecojoActivity : AppCompatActivity() {
         imagenEntrega = findViewById(R.id.imagenEntrega)
         btnCheck = findViewById(R.id.btnCheck)
         btnEditarCliente = findViewById(R.id.btnEditarCliente)
+        btnEditarPedido = findViewById(R.id.btnEditarPedido)
+
+        if (SessionManager.nombreEmpresa == "ADMIN_NANPI_COURIER") {
+            frameEditarPedido.visibility = View.VISIBLE  // Mostrar botón
+        }
+
+        btnEditarPedido.setOnClickListener {
+            val intent = Intent(this, OrderFormActivity::class.java)
+            intent.putExtra("orderId", orderId) // orderId es el ID del pedido que se desea editar
+            intent.putExtra("isEditMode", true) // Pasar el extra como booleano
+            this.startActivity(intent)
+        }
 
         val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
         btnCamara.backgroundTintList = color

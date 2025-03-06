@@ -18,9 +18,10 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.moto_version.cliente.AnuncioDialogFragment
-import com.example.moto_version.cliente.CreateOrderActivity
+import com.example.moto_version.cliente.OrderFormActivity
 import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
+import com.example.moto_version.SessionManager
 import com.example.moto_version.models.ClienteRecojo
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -85,7 +86,7 @@ class GimiMainActivity : AppCompatActivity(), OnMapReadyCallback {
             sharedPreferences.edit().putBoolean("modal_mostrado", true).apply()
         }
 
-        phone = intent.getStringExtra("phone") ?: ""
+        phone = SessionManager.phone ?: ""
         Log.d("GimiMainActivity", "Phone recibido: $phone")
 
         escucharCambiosEnUsuario()
@@ -112,7 +113,7 @@ class GimiMainActivity : AppCompatActivity(), OnMapReadyCallback {
         //fabMenu.visibility = GONE
         fabMenu.setOnClickListener {
             // Crear intent para iniciar la nueva actividad
-            val intent = Intent(this, CreateOrderActivity::class.java).apply {
+            val intent = Intent(this, OrderFormActivity::class.java).apply {
                 putExtra("phone", phone)  // Pasa la variable "proveedorTelefono"
                 putExtra("nombreEmpresa", nombreEmpresa)  // Pasa la variable "ruta"
             }

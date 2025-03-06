@@ -17,6 +17,7 @@ import com.example.moto_version.R
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,10 +33,14 @@ import java.util.*
 import java.util.regex.Pattern
 import kotlin.random.Random
 
-class CreateOrderActivity : AppCompatActivity() {
+class OrderFormActivity : AppCompatActivity() {
 
     private var phone: String = ""
     private var nombreEmpresa: String = ""
+    // Nuevas variables para el modo de edición
+    private var isEditMode = false
+    private var orderId = ""
+
     data class Coordenada(val latitud: Double, val longitud: Double, val direccion1: String, val direccion2: String)
 
     // Inputs para el proveedor
@@ -46,6 +51,7 @@ class CreateOrderActivity : AppCompatActivity() {
     private lateinit var btnObtenerCoordenadasProveedor: Button
     private lateinit var tvCoordenadasProveedor: TextView
     private lateinit var tvCardCoordenadasProveedor: androidx.cardview.widget.CardView
+    private lateinit var tvTitulo: TextView
 
     // Inputs para el cliente
     private lateinit var etClienteNombre: TextInputEditText
@@ -67,7 +73,7 @@ class CreateOrderActivity : AppCompatActivity() {
     private lateinit var tvComisionTarifa: TextView
 
     // Botón para crear pedido
-    private lateinit var btnCrearPedido: Button
+    private lateinit var btnActionPedido: Button
     private lateinit var progressBar: ProgressBar
 
     // Variables para almacenar las coordenadas
@@ -196,15 +202,27 @@ class CreateOrderActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_order)
 
+        // Obtener datos de la intent
         nombreEmpresa = intent.getStringExtra("nombreEmpresa") ?: ""
         phone = intent.getStringExtra("phone") ?: ""
 
+        // Obtener el modo de edición y el ID del pedido si es edición
+        isEditMode = intent.getBooleanExtra("isEditMode", false)
+        orderId = intent.getStringExtra("orderId") ?: ""
 
         // Inicializar vistas
         initializeViews()
 
         // Configurar spinners
         setupSpinners()
+
+        // Configurar UI según el modo
+        setupUIForMode()
+
+        // Cargar datos si es modo edición
+        if (isEditMode && orderId.isNotEmpty()) {
+            loadOrderData(orderId)
+        }
 
         // Configurar listeners
         setupListeners()
@@ -213,17 +231,27 @@ class CreateOrderActivity : AppCompatActivity() {
         validateInputs()
     }
 
+    private fun setupUIForMode() {
+        // Cambiar el título en el TextInputEditText
+        tvTitulo.setText(if (isEditMode) "Editar Pedido" else "Crear Pedido")
+
+        // Configurar botón según el modo
+        btnActionPedido.text = if (isEditMode) "Actualizar Pedido" else "Crear Pedido"
+    }
+
+
     private fun initializeViews() {
+
+        tvTitulo = findViewById(R.id.tvTitulo)
         // Proveedor
         etProveedorNombre = findViewById(R.id.etProveedorNombre)
         etProveedorNombre.setText(nombreEmpresa)
-        etProveedorNombre.isEnabled = false
+        etProveedorNombre.isEnabled  = if (isEditMode) true else false
 
         etProveedorTelefono = findViewById(R.id.etProveedorTelefono)
         etProveedorTelefono.setText(phone)
-        etProveedorTelefono.isEnabled = false
+        etProveedorTelefono.isEnabled  = if (isEditMode) true else false
 
-        etProveedorTelefono.isEnabled = false
         etProveedorDireccion = findViewById(R.id.etProveedorDireccion)
         spinnerProveedorDistrito = findViewById(R.id.spinnerProveedorDistrito)
         btnObtenerCoordenadasProveedor = findViewById(R.id.btnObtenerCoordenadasProveedor)
@@ -250,11 +278,11 @@ class CreateOrderActivity : AppCompatActivity() {
         tvComisionTarifa = findViewById(R.id.tvComisionTarifa)
 
         // Botón para crear pedido
-        btnCrearPedido = findViewById(R.id.btnCrearPedido)
+        btnActionPedido = findViewById(R.id.btnActionPedido) // Mantener el mismo ID en el layout
         progressBar = findViewById(R.id.progressBar)
 
         // Deshabilitar botón hasta validación
-        btnCrearPedido.isEnabled = false
+        btnActionPedido.isEnabled = false
     }
 
     private fun setupSpinners() {
@@ -305,17 +333,17 @@ class CreateOrderActivity : AppCompatActivity() {
 
         // Obtener coordenadas
         btnObtenerCoordenadasProveedor.setOnClickListener {
-            tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+            tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@OrderFormActivity,
                 R.color.gris
             ))
-            obtenerCoordenadas(true)
+            obtenerCoordenadasBolean(true)
         }
 
         btnObtenerCoordenadasCliente.setOnClickListener {
-            tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+            tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@OrderFormActivity,
                 R.color.gris
             ))
-            obtenerCoordenadas(false)
+            obtenerCoordenadasBolean(false)
         }
 
         // Switch para manejar el método de pago
@@ -378,9 +406,223 @@ class CreateOrderActivity : AppCompatActivity() {
             calcularComision()
         }
 
-        // Botón para crear pedido
-        btnCrearPedido.setOnClickListener {
-            crearPedido()
+        // Botón para crear/actualizar pedido
+        btnActionPedido.setOnClickListener {
+            if (isEditMode) {
+                actualizarPedido()
+            } else {
+                crearPedido()
+            }
+        }
+    }
+
+    private fun actualizarPedido() {
+        Log.d("ActualizarPedido", "Iniciando actualización de pedido")
+
+        if (!validateInputs()) {
+            Log.e("ActualizarPedido", "Validación de inputs fallida")
+            Toast.makeText(
+                this,
+                "Por favor completa todos los campos requeridos",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        progressBar.visibility = View.VISIBLE
+        btnActionPedido.isEnabled = false
+
+        val pathId = "recojos/$orderId"
+        Log.d("ActualizarPedido", "Actualizando pedido con ID: $orderId")
+
+        val grupoProveedor = determinarGrupo(spinnerProveedorDistrito.selectedItem.toString())
+        val grupoCliente = determinarGrupo(spinnerClienteDistrito.selectedItem.toString())
+
+        val motorizadoRecojo = grupoProveedor?.let { "motorizado${it.capitalize()}" } ?: "Asignar Recojo"
+        val motorizadoEntrega = grupoCliente?.let { "motorizado${it.capitalize()}" } ?: "Asignar Entrega"
+
+        Log.d("ActualizarPedido", "Motorizado recojo: $motorizadoRecojo, Motorizado entrega: $motorizadoEntrega")
+
+        val proveedorTelefono = cleanAndValidatePhoneNumber(etProveedorTelefono.text.toString())
+        val clienteTelefono = cleanAndValidatePhoneNumber(etClienteTelefono.text.toString())
+
+        if (proveedorTelefono == null || clienteTelefono == null) {
+            Log.e("ActualizarPedido", "Número de teléfono inválido")
+            Toast.makeText(this, "Número de teléfono inválido", Toast.LENGTH_SHORT).show()
+            progressBar.visibility = View.GONE
+            btnActionPedido.isEnabled = true
+            return
+        }
+
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val fechaEntrega: Date
+        try {
+            fechaEntrega = dateFormat.parse(etFechaEntrega.text.toString()) ?: Date()
+        } catch (e: Exception) {
+            Log.e("ActualizarPedido", "Formato de fecha inválido", e)
+            Toast.makeText(this, "Formato de fecha inválido", Toast.LENGTH_SHORT).show()
+            progressBar.visibility = View.GONE
+            btnActionPedido.isEnabled = true
+            return
+        }
+
+        // Primero obtenemos el documento actual para preservar los campos que no estamos actualizando
+        db.document(pathId).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    // Crear un mapa con los campos que queremos actualizar
+                    val updateData = hashMapOf<String, Any?>(
+                        "clienteDistrito" to spinnerClienteDistrito.selectedItem.toString(),
+                        "clienteNombre" to capitalizeName(etClienteNombre.text.toString()),
+                        "clienteTelefono" to clienteTelefono,
+                        "comisionTarifa" to comisionTarifa,
+                        "fechaEntregaPedido" to fechaEntrega,
+                        "motorizadoEntrega" to motorizadoEntrega,
+                        "motorizadoRecojo" to motorizadoRecojo,
+                        "pedidoCantidadCobrar" to (if (switchPedidoSeCobra.isChecked) etPedidoCantidadCobrar.text.toString().toFloatOrNull()?.toString() ?: "0.00" else "0.00"),
+                        "pedidoCoordenadas" to coordenadasCliente?.let {mapOf("lat" to it.first, "lng" to it.second)},
+                        "pedidoDetalle" to capitalizeName(etPedidoDetalle.text.toString()),
+                        "pedidoDireccionLink" to etClienteDireccion.text.toString(),
+                        "pedidoMetodoPago" to (if (switchPedidoSeCobra.isChecked) spinnerMetodoPago.selectedItem.toString() else ""),
+                        "pedidoObservaciones" to etPedidoObservaciones.text.toString(),
+                        "pedidoSeCobra" to (if (switchPedidoSeCobra.isChecked) "Sí" else "No"),
+                        "proveedorDireccionLink" to etProveedorDireccion.text.toString(),
+                        "proveedorDistrito" to spinnerProveedorDistrito.selectedItem.toString(),
+                        "proveedorNombre" to etProveedorNombre.text.toString().uppercase(),
+                        "proveedorTelefono" to proveedorTelefono,
+                        "recojoCoordenadas" to coordenadasProveedor?.let {mapOf("lat" to it.first, "lng" to it.second)},
+                        "supera30x30" to (if (switchPaqueteGrande.isChecked) 1 else 0)
+                    )
+
+                    // Actualizar el documento
+                    db.document(pathId)
+                        .update(updateData)
+                        .addOnSuccessListener {
+                            Log.d("ActualizarPedido", "Pedido actualizado con éxito en Firestore")
+                            Toast.makeText(this, "Pedido actualizado con éxito", Toast.LENGTH_SHORT).show()
+                            finish()
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("ActualizarPedido", "Error al actualizar pedido", e)
+                            Toast.makeText(this, "Error al actualizar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                            progressBar.visibility = View.GONE
+                            btnActionPedido.isEnabled = true
+                        }
+                } else {
+                    Toast.makeText(this, "No se encontró el pedido para actualizar", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = View.GONE
+                    btnActionPedido.isEnabled = true
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ActualizarPedido", "Error al obtener el pedido para actualizar", e)
+                Toast.makeText(this, "Error al actualizar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                progressBar.visibility = View.GONE
+                btnActionPedido.isEnabled = true
+            }
+    }
+
+    private fun loadOrderData(orderId: String) {
+        progressBar.visibility = View.VISIBLE
+
+        val docRef = db.document("recojos/$orderId")
+        docRef.get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    // Cargar datos en los campos
+                    val data = document.data
+
+                    // Proveedor
+                    etProveedorNombre.setText(data?.get("proveedorNombre") as? String ?: "")
+                    etProveedorTelefono.setText(data?.get("proveedorTelefono") as? String ?: "")
+                    etProveedorDireccion.setText(data?.get("proveedorDireccionLink") as? String ?: "")
+
+                    // Seleccionar distrito del proveedor
+                    val proveedorDistrito = data?.get("proveedorDistrito") as? String ?: ""
+                    selectSpinnerItemByValue(spinnerProveedorDistrito, proveedorDistrito)
+
+                    // Cliente
+                    etClienteNombre.setText(data?.get("clienteNombre") as? String ?: "")
+                    etClienteTelefono.setText(data?.get("clienteTelefono") as? String ?: "")
+                    etClienteDireccion.setText(data?.get("pedidoDireccionLink") as? String ?: "")
+
+                    // Seleccionar distrito del cliente
+                    val clienteDistrito = data?.get("clienteDistrito") as? String ?: ""
+                    selectSpinnerItemByValue(spinnerClienteDistrito, clienteDistrito)
+
+                    // Detalles del pedido
+                    etPedidoDetalle.setText(data?.get("pedidoDetalle") as? String ?: "")
+                    etPedidoObservaciones.setText(data?.get("pedidoObservaciones") as? String ?: "")
+
+                    // Fecha de entrega
+                    val fechaEntregaTimestamp = data?.get("fechaEntregaPedido") as? Timestamp
+                    val fechaEntrega = fechaEntregaTimestamp?.toDate() // Convierte Timestamp a Date
+                    if (fechaEntrega != null) {
+                        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        etFechaEntrega.setText(dateFormat.format(fechaEntrega))
+                    }
+
+
+                    // Cobro y método de pago
+                    val seCobra = (data?.get("pedidoSeCobra") as? String ?: "No") == "Sí"
+                    switchPedidoSeCobra.isChecked = seCobra
+
+                    if (seCobra) {
+                        val metodoPago = data?.get("pedidoMetodoPago") as? String ?: ""
+                        selectSpinnerItemByValue(spinnerMetodoPago, metodoPago)
+
+                        val cantidadCobrar = data?.get("pedidoCantidadCobrar") as? String ?: "0.00"
+                        etPedidoCantidadCobrar.setText(cantidadCobrar)
+                    }
+
+                    // Tamaño del paquete
+                    val supera30x30 = (data?.get("supera30x30") as? Long ?: 0) == 1L
+                    switchPaqueteGrande.isChecked = supera30x30
+
+                    // Coordenadas
+                    val recojoCoordenadas = data?.get("recojoCoordenadas") as? Map<String, Double>
+                    if (recojoCoordenadas != null) {
+                        val lat = recojoCoordenadas["lat"] ?: 0.0
+                        val lng = recojoCoordenadas["lng"] ?: 0.0
+                        coordenadasProveedor = Pair(lat, lng)
+                        tvCoordenadasProveedor.text = "¡Coordenadas cargadas!"
+                        tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@OrderFormActivity, R.color.verde_claro))
+                    }
+
+                    val pedidoCoordenadas = data?.get("pedidoCoordenadas") as? Map<String, Double>
+                    if (pedidoCoordenadas != null) {
+                        val lat = pedidoCoordenadas["lat"] ?: 0.0
+                        val lng = pedidoCoordenadas["lng"] ?: 0.0
+                        coordenadasCliente = Pair(lat, lng)
+                        tvCoordenadasCliente.text = "¡Coordenadas cargadas!"
+                        tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@OrderFormActivity, R.color.verde_claro))
+                    }
+
+                    // Calcular comisión después de cargar todos los datos
+                    calcularComision()
+
+                } else {
+                    Toast.makeText(this, "No se encontró el pedido", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                progressBar.visibility = View.GONE
+            }
+            .addOnFailureListener { e ->
+                Log.e("OrderForm", "Error al cargar el pedido", e)
+                Toast.makeText(this, "Error al cargar el pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                progressBar.visibility = View.GONE
+                finish()
+            }
+    }
+
+    // Función auxiliar para seleccionar items en spinners
+    private fun selectSpinnerItemByValue(spinner: Spinner, value: String) {
+        val adapter = spinner.adapter
+        for (i in 0 until adapter.count) {
+            if (adapter.getItem(i).toString() == value) {
+                spinner.setSelection(i)
+                break
+            }
         }
     }
 
@@ -418,7 +660,7 @@ class CreateOrderActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun obtenerCoordenadas(isProveedor: Boolean) {
+    private fun obtenerCoordenadasBolean(isProveedor: Boolean) {
         val btnCoordenadas = if (isProveedor) btnObtenerCoordenadasProveedor else btnObtenerCoordenadasCliente
         val tvCoordenadas = if (isProveedor) tvCoordenadasProveedor else tvCoordenadasCliente
         val etDireccion = if (isProveedor) etProveedorDireccion else etClienteDireccion
@@ -444,7 +686,7 @@ class CreateOrderActivity : AppCompatActivity() {
 
 
         if (texto.isBlank()) {
-            Toast.makeText(this@CreateOrderActivity,"Ingresa una dirección o copia una URL",Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@OrderFormActivity,"Ingresa una dirección o copia una URL",Toast.LENGTH_SHORT).show()
             tvCoordenadas.text = "Ingresa una dirección o copia una URL"
             tvCoordenadas.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
             btnCoordenadas.isEnabled = true
@@ -460,12 +702,12 @@ class CreateOrderActivity : AppCompatActivity() {
                 if (coordenadas != null) {
                     if (isProveedor) {
                         coordenadasProveedor = Pair(coordenadas.latitud, coordenadas.longitud)
-                        tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+                        tvCardCoordenadasProveedor.setCardBackgroundColor(ContextCompat.getColor(this@OrderFormActivity,
                             R.color.verde_claro
                         ))
                     } else {
                         coordenadasCliente = Pair(coordenadas.latitud, coordenadas.longitud)
-                        tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@CreateOrderActivity,
+                        tvCardCoordenadasCliente.setCardBackgroundColor(ContextCompat.getColor(this@OrderFormActivity,
                             R.color.verde_claro
                         ))
                     }
@@ -498,13 +740,13 @@ class CreateOrderActivity : AppCompatActivity() {
                         } else {
                             "Seleccione distrito de cliente"
                         }
-                        Toast.makeText(this@CreateOrderActivity, mensaje, Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@OrderFormActivity, mensaje, Toast.LENGTH_LONG).show()
                     }
 
                 } else {
                     tvCoordenadas.text = "No se pudieron obtener coordenadas"
                     Toast.makeText(
-                        this@CreateOrderActivity,
+                        this@OrderFormActivity,
                         "No se pudieron obtener coordenadas",
                         Toast.LENGTH_SHORT
                     ).show()
@@ -556,6 +798,9 @@ class CreateOrderActivity : AppCompatActivity() {
         val cantidadCobrar =
             if (seCobra) etPedidoCantidadCobrar.text.toString().trim().isNotEmpty() else true
 
+        // En modo de edición, verificar que el ID no esté vacío
+        val idValido = if (isEditMode) orderId.isNotEmpty() else true
+
         val todosLosRequeridos = proveedorNombre.isNotEmpty() &&
                 proveedorTelefono.isNotEmpty() &&
                 proveedorDistrito &&
@@ -567,9 +812,10 @@ class CreateOrderActivity : AppCompatActivity() {
                 metodoPago &&
                 cantidadCobrar &&
                 coordenadasProveedor != null &&
-                coordenadasCliente != null
+                coordenadasCliente != null &&
+                idValido
 
-        btnCrearPedido.isEnabled = todosLosRequeridos
+        btnActionPedido.isEnabled = todosLosRequeridos
         return todosLosRequeridos
     }
 
@@ -587,7 +833,7 @@ class CreateOrderActivity : AppCompatActivity() {
         }
 
         progressBar.visibility = View.VISIBLE
-        btnCrearPedido.isEnabled = false
+        btnActionPedido.isEnabled = false
 
         val formattedDocId = generarIdPedido()
         val pathId = "recojos/$formattedDocId"
@@ -608,7 +854,7 @@ class CreateOrderActivity : AppCompatActivity() {
             Log.e("CrearPedido", "Número de teléfono inválido")
             Toast.makeText(this, "Número de teléfono inválido", Toast.LENGTH_SHORT).show()
             progressBar.visibility = View.GONE
-            btnCrearPedido.isEnabled = true
+            btnActionPedido.isEnabled = true
             return
         }
 
@@ -620,7 +866,7 @@ class CreateOrderActivity : AppCompatActivity() {
             Log.e("CrearPedido", "Formato de fecha inválido", e)
             Toast.makeText(this, "Formato de fecha inválido", Toast.LENGTH_SHORT).show()
             progressBar.visibility = View.GONE
-            btnCrearPedido.isEnabled = true
+            btnActionPedido.isEnabled = true
             return
         }
 
@@ -672,7 +918,7 @@ class CreateOrderActivity : AppCompatActivity() {
                 Log.e("CrearPedido", "Error al crear pedido", e)
                 Toast.makeText(this, "Error al crear pedido: ${e.message}", Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
-                btnCrearPedido.isEnabled = true
+                btnActionPedido.isEnabled = true
             }
     }
 

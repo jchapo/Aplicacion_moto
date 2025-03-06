@@ -5,10 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".cliente.CreateOrderActivity">
+    tools:context=".cliente.OrderFormActivity">
 
     <!-- Título principal -->
     <TextView
+        android:id="@+id/tvTitulo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Crear Nuevo Pedido"
@@ -90,7 +91,10 @@
                             android:id="@+id/etProveedorDireccion"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Dirección del proveedor"/>
+                            android:hint="Dirección del proveedor"
+                            android:maxLines="1"
+                            android:singleLine="true"
+                            android:ellipsize="end"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <Button
@@ -406,10 +410,10 @@
         android:elevation="4dp">
 
         <Button
-            android:id="@+id/btnCrearPedido"
+            android:id="@+id/btnActionPedido"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="Crear Pedido"
+            android:text="Boton Action"
             android:background="@drawable/rounded_button"
             android:textColor="@color/white"
             android:textStyle="bold"/>

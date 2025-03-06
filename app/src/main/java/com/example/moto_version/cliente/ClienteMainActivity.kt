@@ -26,7 +26,6 @@ import com.google.firebase.firestore.ListenerRegistration
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
-import android.location.Location
 import android.location.LocationManager
 import android.content.Context
 import android.net.Uri
@@ -37,12 +36,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
+import com.example.moto_version.SessionManager
 import com.example.moto_version.gimi.GimiMiAdapter
 import com.example.moto_version.models.ClienteRecojo
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.Timestamp
-import java.util.Calendar
 import com.google.maps.android.data.kml.KmlLayer
 import kotlinx.coroutines.CoroutineScope
 import java.net.URL
@@ -91,8 +90,9 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
             sharedPreferences.edit().putBoolean("modal_mostrado", true).apply()
         }
 
-        phone = intent.getStringExtra("phone") ?: ""
-        nombreEmpresa = intent.getStringExtra("nombreEmpresa") ?: ""
+        phone = SessionManager.phone ?: ""
+        nombreEmpresa = SessionManager.nombreEmpresa ?: ""
+
         Log.d("ClienteMainActivity", "Phone recibido: $phone")
 
         escucharCambiosEnUsuario()
@@ -119,7 +119,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
         //fabMenu.visibility = GONE
         fabMenu.setOnClickListener {
             // Crear intent para iniciar la nueva actividad
-            val intent = Intent(this, CreateOrderActivity::class.java).apply {
+            val intent = Intent(this, OrderFormActivity::class.java).apply {
                 putExtra("phone", phone)  // Pasa la variable "proveedorTelefono"
                 putExtra("nombreEmpresa", nombreEmpresa)  // Pasa la variable "ruta"
             }

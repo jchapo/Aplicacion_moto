@@ -5,17 +5,46 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
-    <!-- Información de monto a cobrar -->
-    <TextView
-        android:id="@+id/tvDetallePrecio"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Monto a cobrar: "
-        android:textSize="25sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:background="@color/md_theme_inversePrimary"
-        android:padding="12dp"/>
+        android:orientation="horizontal"
+        android:background="@color/md_theme_primary">
+
+        <TextView
+            android:id="@+id/tvDetallePrecio"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Monto a cobrar: "
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@color/md_theme_inversePrimary"
+            android:padding="12dp"/>
+
+        <!-- Botón Editar Pedido -->
+        <FrameLayout
+            android:id="@+id/frameEditarPedido"
+            android:visibility="gone"
+            android:layout_width="50dp"
+            android:layout_height="match_parent">
+
+            <ImageButton
+                android:id="@+id/btnEditarPedido"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@null"
+                android:src="@drawable/pen_to_square_solid"
+                android:contentDescription="Editar Cliente"
+                android:scaleType="fitCenter"
+                android:padding="13dp"/>
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Información de monto a cobrar -->
+
 
     <!-- Contenedor scrollable para tarjetas -->
     <ScrollView

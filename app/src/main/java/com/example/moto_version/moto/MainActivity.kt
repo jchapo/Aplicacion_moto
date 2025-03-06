@@ -40,6 +40,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
+import com.example.moto_version.SessionManager
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
 import com.google.firebase.Timestamp
@@ -554,7 +555,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        rutaMotorizado = intent.getStringExtra("ruta") ?: ""
+        rutaMotorizado = SessionManager.ruta ?: ""
         Log.d("MainActivity", "Ruta recibida: $rutaMotorizado")
 
         escucharCambiosEnUsuario()

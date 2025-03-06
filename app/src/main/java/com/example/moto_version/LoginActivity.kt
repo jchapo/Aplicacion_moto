@@ -115,40 +115,38 @@ class LoginActivity : AppCompatActivity() {
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty) {
                     val document = documents.documents[0]
-                    val rol = document.getString("rol") ?: "Usuario"
-                    val ruta = document.getString("ruta") ?: ""  // Obtén la ruta desde Firestore
-                    val nombre = document.getString("name") ?:""
-                    val phone = document.getString("phone") ?:""
-                    val nombreEmpresa = document.getString("nombreEmpresa") ?:""
 
-                    if (rol == "Motorizado") {
-                        Toast.makeText(this, "Bienvenido $nombre", Toast.LENGTH_LONG).show()
-                        val intent = Intent(this, MainActivity::class.java).apply {
-                            putExtra("ruta", ruta)  // Pasa la variable "ruta"
+                    // Guardar datos en el Singleton
+                    SessionManager.rol = document.getString("rol") ?: ""
+                    SessionManager.ruta = document.getString("ruta") ?: ""
+                    SessionManager.nombre = document.getString("name") ?: ""
+                    SessionManager.phone = document.getString("phone") ?: ""
+                    SessionManager.nombreEmpresa = document.getString("nombreEmpresa") ?: ""
+
+                    // Mensaje de bienvenida
+                    Toast.makeText(this, "Bienvenido ${SessionManager.nombre}", Toast.LENGTH_LONG).show()
+
+                    // Redirigir a la actividad correspondiente
+                    when (SessionManager.rol) {
+                        "Motorizado" -> {
+                            startActivity(Intent(this, MainActivity::class.java))
+                            finish()
                         }
-                        startActivity(intent)
-                        finish()
-                    } else if (rol == "Cliente") {
-                        Toast.makeText(this, "Bienvenido $nombre ", Toast.LENGTH_LONG).show()
-                        val intent = Intent(this, ClienteMainActivity::class.java).apply {
-                            putExtra("phone", phone)  // Pasa la variable "phone"
-                            putExtra("nombreEmpresa", nombreEmpresa)  // Pasa la variable "nombreEmpresa"
+                        "Cliente" -> {
+                            startActivity(Intent(this, ClienteMainActivity::class.java))
+                            finish()
                         }
-                        startActivity(intent)
-                        finish()
-                    } else if(rol == "Gimi"){
-                        Toast.makeText(this, "Bienvenido $nombre", Toast.LENGTH_LONG).show()
-                        val intent = Intent(this, GimiMainActivity::class.java).apply {
-                            putExtra("phone", phone)  // Pasa la variable "phone"
+                        "Gimi" -> {
+                            startActivity(Intent(this, GimiMainActivity::class.java))
                         }
-                        startActivity(intent)
-                    } else {
-                        Toast.makeText(this, "Hubo un error", Toast.LENGTH_LONG).show()
-                        auth.signOut()  // ❌ Cerrar sesión
+                        else -> {
+                            Toast.makeText(this, "Hubo un error", Toast.LENGTH_LONG).show()
+                            auth.signOut()  // ❌ Cerrar sesión
+                        }
                     }
                 } else {
                     Toast.makeText(this, "Usuario no registrado", Toast.LENGTH_LONG).show()
-                    auth.signOut()  // ❌ Cerrar sesión
+                    auth.signOut()
                     startActivity(Intent(this, LoginActivity::class.java))
                     finish()
                 }
@@ -157,6 +155,7 @@ class LoginActivity : AppCompatActivity() {
                 Log.e("Firestore", "Error obteniendo rol", exception)
             }
     }
+
 
 
 
