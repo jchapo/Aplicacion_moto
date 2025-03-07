@@ -39,7 +39,7 @@ import androidx.cardview.widget.CardView
 import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
 import com.example.moto_version.SessionManager
-import com.example.moto_version.gimi.GimiMiAdapter
+import com.example.moto_version.cliente.ClienteMiAdapter
 import com.example.moto_version.models.ClienteRecojo
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
@@ -60,7 +60,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var cliente_recyclerView: RecyclerView
     private lateinit var cliente_tarjetaVacia: TextView
-    private lateinit var adapter: GimiMiAdapter
+    private lateinit var adapter: ClienteMiAdapter
     private var mMap: GoogleMap? = null
     private lateinit var drawerLayout: DrawerLayout
     private val db = FirebaseFirestore.getInstance()
@@ -110,7 +110,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
         // Configurar RecyclerView
         cliente_recyclerView = findViewById(R.id.cliente_recyclerView)
         cliente_recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = GimiMiAdapter(emptyList())  // Inicialmente vacío
+        adapter = ClienteMiAdapter(emptyList())  // Inicialmente vacío
         cliente_recyclerView.adapter = adapter
 
         // Cargar datos desde Firestore

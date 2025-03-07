@@ -190,12 +190,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     }
                 }
 
-                /*if (horaActual >= 13) {
-                    datosCargados = true
-                    mMap?.let {
-                        actualizarMapa()
-                    }
-                }*/
+                datosCargados = true
+                mMap?.let {
+                    actualizarMapa()
+                }
             }
 
         /*if (horaActual >= 13) {*/

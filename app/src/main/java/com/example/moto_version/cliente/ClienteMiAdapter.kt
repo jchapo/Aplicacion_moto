@@ -11,9 +11,10 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.moto_version.R
+import com.example.moto_version.models.ClienteRecojo
 import com.example.moto_version.models.Recojo
 
-class ClienteMiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<ClienteMiAdapter.ViewHolder>() {
+class ClienteMiAdapter(private var listaRecojos: List<ClienteRecojo>) : RecyclerView.Adapter<ClienteMiAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imagenRecojoItem: ImageView = view.findViewById(R.id.imagenRecojoItem)
@@ -80,7 +81,7 @@ class ClienteMiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Ad
 
     override fun getItemCount(): Int = listaRecojos.size
 
-    fun actualizarLista(nuevaLista: List<Recojo>) {
+    fun actualizarLista(nuevaLista: List<ClienteRecojo>) {
         listaRecojos = nuevaLista
         notifyDataSetChanged()
     }
