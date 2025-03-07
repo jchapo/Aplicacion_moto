@@ -137,18 +137,6 @@ class GimiMainActivity : AppCompatActivity(), OnMapReadyCallback {
         params.height = alturaMapa
         gimi_frame.layoutParams = params
 
-
-        val sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val modalMostrado = sharedPreferences.getBoolean("modal_mostrado", false)
-
-        if (!modalMostrado) {
-            val anuncioDialog = AnuncioDialogFragment()
-            anuncioDialog.show(supportFragmentManager, "AnuncioDialog")
-
-            // Guardar que el modal ya se mostró
-            sharedPreferences.edit().putBoolean("modal_mostrado", true).apply()
-        }
-
         phone = SessionManager.phone ?: ""
         Log.d("GimiMainActivity", "Phone recibido: $phone")
 

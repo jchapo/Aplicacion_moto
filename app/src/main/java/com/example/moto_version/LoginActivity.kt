@@ -129,26 +129,29 @@ class LoginActivity : AppCompatActivity() {
                     // Redirigir a la actividad correspondiente
                     when (SessionManager.rol) {
                         "Motorizado" -> {
-                            startActivity(Intent(this, MainActivity::class.java))
+                            val intent = Intent(this, MainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
                             finish()
                         }
                         "Cliente" -> {
-                            startActivity(Intent(this, ClienteMainActivity::class.java))
+                            val intent = Intent(this, ClienteMainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
                             finish()
                         }
                         "Admin" -> {
-                            startActivity(Intent(this, GimiMainActivity::class.java))
+                            val intent = Intent(this, GimiMainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
                         }
                         else -> {
                             Toast.makeText(this, "Hubo un error", Toast.LENGTH_LONG).show()
-                            auth.signOut()  // ❌ Cerrar sesión
+                            auth.signOut()  // Cerrar sesión en caso de error
                         }
                     }
-                } else {
-                    Toast.makeText(this, "Usuario no registrado", Toast.LENGTH_LONG).show()
-                    auth.signOut()
-                    startActivity(Intent(this, LoginActivity::class.java))
-                    finish()
+
                 }
             }
             .addOnFailureListener { exception ->
