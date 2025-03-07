@@ -405,13 +405,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                 marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
             }
-
-            // Ajustar el zoom si hay al menos un marcador
-            if (puntosRecojoLista.isNotEmpty() || puntosEntregaLista.isNotEmpty() || puntosRecojoListaEspecial.isNotEmpty()) {
-                val bounds = boundsBuilder.build()
-                val padding = 100 // Espaciado en píxeles alrededor de los puntos
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
-            }
         }
     }
     private fun centrarMapaConUbicacion(ubicacionUsuario: LatLng) {

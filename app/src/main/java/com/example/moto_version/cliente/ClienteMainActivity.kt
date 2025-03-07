@@ -31,6 +31,8 @@ import android.content.Context
 import android.net.Uri
 import android.provider.Settings
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
@@ -41,6 +43,7 @@ import com.example.moto_version.gimi.GimiMiAdapter
 import com.example.moto_version.models.ClienteRecojo
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.VisibleRegion
 import com.google.firebase.Timestamp
 import com.google.maps.android.data.kml.KmlLayer
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +58,8 @@ private const val REQUEST_LOCATION_SETTINGS = 1002
 
 class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var cliente_recyclerView: RecyclerView
+    private lateinit var cliente_tarjetaVacia: TextView
     private lateinit var adapter: GimiMiAdapter
     private var mMap: GoogleMap? = null
     private lateinit var drawerLayout: DrawerLayout
@@ -78,6 +82,8 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.cliente_activity_main)
+
+        cliente_tarjetaVacia = findViewById(R.id.cliente_tarjetaVacia)
 
         val sharedPreferences = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val modalMostrado = sharedPreferences.getBoolean("modal_mostrado", false)
@@ -102,10 +108,10 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment?.getMapAsync(this)
 
         // Configurar RecyclerView
-        recyclerView = findViewById(R.id.cliente_recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        cliente_recyclerView = findViewById(R.id.cliente_recyclerView)
+        cliente_recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = GimiMiAdapter(emptyList())  // Inicialmente vacío
-        recyclerView.adapter = adapter
+        cliente_recyclerView.adapter = adapter
 
         // Cargar datos desde Firestore
         obtenerDatosFirestore()
@@ -315,7 +321,6 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
     private fun agregarMarcadores() {
         mMap?.let { map ->
-            // NO usar map.clear() aquí porque eliminaría el KML
 
             val boundsBuilder = LatLngBounds.Builder()
 
@@ -336,12 +341,6 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
-            }
-
-            if (puntosRecojoLista.isNotEmpty()) {
-                val bounds = boundsBuilder.build()
-                val padding = 100 // Espaciado en píxeles alrededor de los puntos
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
             }
         }
     }
@@ -414,9 +413,21 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
     }
     private fun centrarMapaSinUbicacion() {
         if (puntosRecojoLista.isEmpty()) {
-            Log.d("ClienteMainActivity", "No hay coordenadas para centrar el mapa")
+            Log.d("ClienteMainActivity", "No hay coordenadas para centrar el mapa, usando ubicación por defecto (Lima, Perú)")
+
+            val limaPeru = LatLng(-12.0464, -77.0428) // Coordenadas de Lima, Perú
+            val zoomLevel = 12f // Ajusta según la necesidad
+
+            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(limaPeru, zoomLevel))
             return
+
+            cliente_tarjetaVacia.visibility = VISIBLE
+            cliente_recyclerView.visibility = GONE
         }
+
+        cliente_tarjetaVacia.visibility = GONE
+        cliente_recyclerView.visibility = VISIBLE
+
         val listaRecojos = puntosRecojoLista.map { punto ->
             ClienteRecojo(
                 id = punto.id,
