@@ -587,7 +587,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }*/
 
         // Configurar navegación del menú lateral
-        navView.setNavigationItemSelectedListener { menuItem ->
+        /*navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> showToast("Inicio")
                 R.id.nav_profile -> showToast("Perfil")
@@ -596,7 +596,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             drawerLayout.closeDrawer(GravityCompat.START)
             true
-        }
+        }*/
 
         actualizarIndicadores()
 

@@ -158,7 +158,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         if (fechaRecojoPedidoMotorizado == null) {
             tvPrecio.text = "RECOJO PENDIENTE"
             tvCardCliente.visibility = View.GONE
-        } else if (fechaEntregaPedidoMotorizado == null) {
+        } else {
             tvPrecio.isClickable = true  // Habilita clics
             tvPrecio.setOnClickListener {
                 mostrarDialogoConImagen()

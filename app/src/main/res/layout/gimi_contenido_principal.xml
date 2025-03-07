@@ -7,8 +7,9 @@
 
     <!-- Contenedor para el Mapa -->
     <FrameLayout
+        android:id="@+id/gimi_frame"
         android:layout_width="match_parent"
-        android:layout_height="400dp">
+        android:layout_height="500dp">
 
         <!-- Mapa -->
         <androidx.fragment.app.FragmentContainerView
@@ -18,129 +19,186 @@
             android:layout_height="match_parent"/>
 
         <!-- Indicadores flotando sobre el mapa -->
-        <LinearLayout
-            android:layout_width="300dp"
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/gimi_flexboxIndicadores"
+            android:layout_width="377dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginTop="310dp"
+            android:layout_gravity="bottom|center_horizontal"
             android:layout_marginHorizontal="32dp"
-            android:layout_gravity="top|center_horizontal">
+            android:translationY="-20dp"
+            app:alignItems="center"
+            app:flexWrap="wrap"
+            app:justifyContent="center">
 
+            <!-- Card 1 -->
             <androidx.cardview.widget.CardView
-                android:id="@+id/gimi_cardIndUno"
+                android:id="@+id/gimi_cardIndCero"
                 android:layout_width="85dp"
-                android:backgroundTint="@color/md_theme_error"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="8dp">
-
-                    <TextView
-                        android:id="@+id/gimi_indUno"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textSize="25dp"
-                        android:text="Ind 1"
-                        android:textColor="@color/white"
-                        android:textStyle="bold"
-                        android:gravity="center"/>
-                    <TextView
-                        android:id="@+id/gimi_textUno"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Anulado"
-                        android:textColor="@color/white"
-                        android:textSize="16dp"
-                        android:gravity="center"/>
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/gimi_cardIndDos"
-                android:layout_width="85dp"
-                android:layout_marginEnd="16dp"
-                android:backgroundTint="@color/md_theme_primaryFixedDim"
-                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:backgroundTint="@color/amarillo"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
 
-                <!-- Contenedor para organizar los textos verticalmente -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:gravity="center"
-                    android:padding="8dp">
+                    android:orientation="vertical"
+                    android:padding="2dp">
+
+                    <TextView
+                        android:id="@+id/gimi_indCero"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Ind 1"
+                        android:textColor="@color/md_theme_primaryFixed_highContrast"
+                        android:textSize="18dp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/gimi_textCero"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Recoger"
+                        android:textColor="@color/md_theme_primaryFixed_highContrast"
+                        android:textSize="14dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Card 2 -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/gimi_cardIndDos"
+                android:layout_width="85dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:backgroundTint="@color/md_theme_primaryFixedDim"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="2dp">
 
                     <TextView
                         android:id="@+id/gimi_indDos"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="25dp"
-                        android:textStyle="bold"
-                        android:textColor="@color/md_theme_primaryFixed_highContrast"
+                        android:gravity="center"
                         android:text="Ind 1"
-                        android:gravity="center"/>
+                        android:textColor="@color/md_theme_primaryFixed_highContrast"
+                        android:textSize="18dp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/gimi_textDos"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Faltan"
+                        android:gravity="center"
+                        android:text="Entregar"
                         android:textColor="@color/md_theme_primaryFixed_highContrast"
-                        android:textSize="16dp"
-                        android:gravity="center"/>
+                        android:textSize="14dp" />
                 </LinearLayout>
-
             </androidx.cardview.widget.CardView>
+
+            <!-- Card 3 -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/gimi_cardIndTres"
                 android:layout_width="85dp"
-                android:backgroundTint="@color/green"
                 android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:backgroundTint="@color/green"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
 
-                <!-- Contenedor para organizar los textos verticalmente -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:gravity="center"
-                    android:padding="8dp">
+                    android:orientation="vertical"
+                    android:padding="2dp">
 
                     <TextView
                         android:id="@+id/gimi_indTres"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="25dp"
-                        android:textStyle="bold"
-                        android:textColor="@color/md_theme_primaryFixed_highContrast"
+                        android:gravity="center"
                         android:text="Ind 1"
-                        android:gravity="center"/>
+                        android:textColor="@color/md_theme_primaryFixed_highContrast"
+                        android:textSize="18dp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/gimi_textTres"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Listo"
+                        android:gravity="center"
+                        android:text="Finalizado"
                         android:textColor="@color/md_theme_primaryFixed_highContrast"
-                        android:textSize="16dp"
-                        android:gravity="center"/>
+                        android:textSize="14dp" />
                 </LinearLayout>
-
             </androidx.cardview.widget.CardView>
 
-        </LinearLayout>
+            <!-- Card 4 -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/gimi_cardIndUno"
+                android:layout_width="85dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:backgroundTint="@color/md_theme_error"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="2dp">
+
+                    <TextView
+                        android:id="@+id/gimi_indUno"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Ind 1"
+                        android:textColor="@color/white"
+                        android:textSize="18dp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/gimi_textUno"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="Anulado"
+                        android:textColor="@color/white"
+                        android:textSize="14dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- You can add more cards here as needed -->
+
+        </com.google.android.flexbox.FlexboxLayout>
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/gimi_flexboxIndicadores2"
+            android:layout_width="377dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginHorizontal="32dp"
+            android:translationY="-20dp"
+            app:alignItems="center"
+            app:flexWrap="wrap"
+            app:justifyContent="center">
+
+        </com.google.android.flexbox.FlexboxLayout>
     </FrameLayout>
+
 
     <TextView
         android:visibility="gone"

@@ -119,7 +119,7 @@ class LoginActivity : AppCompatActivity() {
                     // Guardar datos en el Singleton
                     SessionManager.rol = document.getString("rol") ?: ""
                     SessionManager.ruta = document.getString("ruta") ?: ""
-                    SessionManager.nombre = document.getString("name") ?: ""
+                    SessionManager.nombre = document.getString("nombre") ?: ""
                     SessionManager.phone = document.getString("phone") ?: ""
                     SessionManager.nombreEmpresa = document.getString("nombreEmpresa") ?: ""
 
@@ -136,7 +136,7 @@ class LoginActivity : AppCompatActivity() {
                             startActivity(Intent(this, ClienteMainActivity::class.java))
                             finish()
                         }
-                        "Gimi" -> {
+                        "Admin" -> {
                             startActivity(Intent(this, GimiMainActivity::class.java))
                         }
                         else -> {

@@ -2,28 +2,38 @@
 
     <!-- Elemento del menú: Inicio -->
     <item
-        android:id="@+id/nav_home"
-        android:icon="@drawable/baseline_menu_24"
-        android:title="Inicio"/>
+        android:id="@+id/nav_map_pedidos"
+        android:icon="@drawable/box_solid"
+        android:title="Mapa de pedidos"/>
+
+    <item
+        android:id="@+id/nav_map_recojos"
+        android:icon="@drawable/box_solid"
+        android:title="Mapa de recojos"/>
+
+    <item
+        android:id="@+id/nav_map_entregas"
+        android:icon="@drawable/box_solid"
+        android:title="Mapa de entregas"/>
 
     <!-- Elemento del menú: Perfil -->
     <item
-        android:id="@+id/nav_profile"
-        android:icon="@drawable/baseline_menu_24"
-        android:title="Mi Perfil"/>
+        android:id="@+id/nav_proveedores"
+        android:icon="@drawable/store_solid"
+        android:title="Proveedores"/>
 
     <!-- Elemento del menú: Configuración -->
     <item
-        android:id="@+id/nav_settings"
-        android:icon="@drawable/baseline_menu_24"
-        android:title="Configuración"/>
+        android:id="@+id/nav_motorizados"
+        android:icon="@drawable/motorcycle_solid"
+        android:title="Motorizados"/>
 
     <!-- Separador -->
     <group android:id="@+id/nav_group">
         <item
-            android:id="@+id/nav_about"
-            android:icon="@drawable/baseline_menu_24"
-            android:title="Acerca de"/>
+            android:id="@+id/nav_cerrar_sesion"
+            android:icon="@drawable/right_from_bracket_solid"
+            android:title="Cerrar Sesión"/>
     </group>
 
 </menu>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="24dp"
+    android:background="@color/md_theme_surface">
+
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:id="@+id/drag_handle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Menú principal"
+        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+        android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnPedidos"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:text="Pedidos"
+        android:textSize="16sp"
+        android:textAlignment="textStart"
+        app:icon="@drawable/box_solid"
+        app:iconSize="24dp"
+        app:iconPadding="16dp"
+        android:layout_marginBottom="8dp"
+        style="@style/Widget.Material3.Button.TextButton"/>
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnProveedores"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:text="Proveedores"
+        android:textSize="16sp"
+        android:textAlignment="textStart"
+        app:icon="@drawable/store_solid"
+        app:iconSize="24dp"
+        app:iconPadding="16dp"
+        android:layout_marginBottom="8dp"
+        style="@style/Widget.Material3.Button.TextButton"/>
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnMotorizados"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:text="Motorizados"
+        android:textSize="16sp"
+        android:textAlignment="textStart"
+        app:icon="@drawable/motorcycle_solid"
+        app:iconSize="24dp"
+        app:iconPadding="16dp"
+        android:layout_marginBottom="16dp"
+        style="@style/Widget.Material3.Button.TextButton"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCerrarSesion"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:text="Cerrar Sesión"
+        android:textSize="16sp"
+        android:textAlignment="textStart"
+        android:textColor="?attr/colorError"
+        app:iconTint="?attr/colorError"
+        app:icon="@drawable/motorcycle_solid"
+        app:iconSize="24dp"
+        android:layout_marginBottom="16dp"
+        style="@style/Widget.Material3.Button.OutlinedButton"/>
+</LinearLayout>

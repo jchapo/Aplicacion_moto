@@ -1,32 +1,68 @@
-<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/gimi_drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Contenido principal con CoordinatorLayout -->
+    <!-- Contenedor principal con AppBar -->
     <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinator_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <include layout="@layout/gimi_contenido_principal"/>
+        <!-- AppBar con MaterialToolbar -->
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/gimi_fab_menu"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:src="@drawable/plus_solid"
-            android:contentDescription="Abrir menú"
-            app:layout_anchorGravity="bottom|end"/>
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/gimi_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="?attr/colorSurfaceContainerHigh"
+                app:title="Mi Aplicación"
+                app:navigationIcon="@drawable/baseline_menu_24"
+                app:titleCentered="true"/>
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <!-- Contenido principal debajo del Toolbar -->
+        <FrameLayout
+            android:id="@+id/contenedor_principal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <include layout="@layout/gimi_contenido_principal"/>
+
+        </FrameLayout>
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-    <!-- Menú lateral -->
+    <!-- Menú lateral en Material 3 -->
     <com.google.android.material.navigation.NavigationView
-        android:id="@+id/gimi_nav_view"
+        android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-        app:menu="@menu/drawer_menu"/>
+        android:layout_gravity="start">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <com.google.android.material.navigation.NavigationView
+                android:id="@+id/gimi_nav_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:menu="@menu/drawer_menu" />
+        </LinearLayout>
+
+    </com.google.android.material.navigation.NavigationView>
+
 </androidx.drawerlayout.widget.DrawerLayout>

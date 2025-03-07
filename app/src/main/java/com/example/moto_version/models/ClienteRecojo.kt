@@ -11,5 +11,8 @@ data class ClienteRecojo(
     val fechaEntregaPedidoMotorizado: Timestamp? = null,
     val fechaRecojoPedidoMotorizado: Timestamp? = null,
     val thumbnailFotoRecojo: String = "",
-    val fechaAnulacionPedido: Timestamp? = null
+    val fechaAnulacionPedido: Timestamp? = null,
+    val motorizadoEntrega: String = "",
+    val motorizadoRecojo: String = ""
+
 )
