@@ -68,10 +68,11 @@
             android:exported="true" />
 
         <activity android:name=".cliente.ClienteDetalleRecojoActivity" />
+        <activity android:name=".gimi.ProveedoresActivity" />
         <activity android:name=".cliente.OrderFormActivity" />
 
         <activity
-            android:name=".gimi.GimiMainActivity"
+            android:name=".gimi.GimiMainActivity1"
             android:exported="true" />
 
     </application>

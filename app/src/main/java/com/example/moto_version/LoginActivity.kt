@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.moto_version.cliente.ClienteMainActivity
 import com.example.moto_version.gimi.GimiMainActivity
+import com.example.moto_version.gimi.GimiMainActivity1
 import com.example.moto_version.moto.MainActivity
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
@@ -141,7 +142,7 @@ class LoginActivity : AppCompatActivity() {
                             finish()
                         }
                         "Admin" -> {
-                            val intent = Intent(this, GimiMainActivity::class.java)
+                            val intent = Intent(this, GimiMainActivity1::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             startActivity(intent)
                             finish()
