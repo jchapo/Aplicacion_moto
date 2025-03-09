@@ -378,7 +378,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
     private fun actualizarMapa() {
         limpiarSoloMarcadores()
         cargarMapaKML()
-        agregarMarcadores()
+        agregarMarcadores("pedidos")
         centrarMapaSinUbicacion()
     }
 
@@ -468,35 +468,50 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
         }
     }
 
-    private fun agregarMarcadores() {
+    private fun agregarMarcadores(tipo: String) {
         mMap?.let { map ->
-            val boundsBuilder = LatLngBounds.Builder()
+            limpiarSoloMarcadores() // Limpiar marcadores antes de agregar nuevos
 
             for (punto in puntosRecojoLista) {
                 val color: Float
                 val posicion: LatLng
                 val titulo: String
 
-                when {
-                    punto.fechaAnulacionPedido != null -> {
-                        color = BitmapDescriptorFactory.HUE_ROSE
-                        posicion = punto.ubicacionCliente
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                when (tipo) {
+                    "recojos" -> {
+                        color = BitmapDescriptorFactory.HUE_BLUE
+                        posicion = punto.ubicacionProveedor
+                        titulo = "Recojo: ${punto.motorizadoRecojo}"
                     }
-                    punto.fechaEntregaPedidoMotorizado != null -> {
+                    "entregas" -> {
                         color = BitmapDescriptorFactory.HUE_GREEN
                         posicion = punto.ubicacionCliente
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
-                    }
-                    punto.fechaRecojoPedidoMotorizado == null -> {
-                        color = BitmapDescriptorFactory.HUE_YELLOW
-                        posicion = punto.ubicacionProveedor
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                        titulo = "Entrega: ${punto.motorizadoEntrega}"
                     }
                     else -> {
-                        color = BitmapDescriptorFactory.HUE_BLUE
-                        posicion = punto.ubicacionCliente
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                        // Marcadores para pedidos (comportamiento por defecto)
+                        when {
+                            punto.fechaAnulacionPedido != null -> {
+                                color = BitmapDescriptorFactory.HUE_ROSE
+                                posicion = punto.ubicacionCliente
+                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                            }
+                            punto.fechaEntregaPedidoMotorizado != null -> {
+                                color = BitmapDescriptorFactory.HUE_GREEN
+                                posicion = punto.ubicacionCliente
+                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                            }
+                            punto.fechaRecojoPedidoMotorizado == null -> {
+                                color = BitmapDescriptorFactory.HUE_YELLOW
+                                posicion = punto.ubicacionProveedor
+                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                            }
+                            else -> {
+                                color = BitmapDescriptorFactory.HUE_BLUE
+                                posicion = punto.ubicacionCliente
+                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                            }
+                        }
                     }
                 }
 
@@ -508,18 +523,17 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                 )
 
                 marker?.let { marcadores.add(it) } // Guardar referencia al marcador
-                boundsBuilder.include(posicion)
             }
         }
     }
 
     fun actualizarMapaSegunSeleccion(tipo: String) {
-
-        recyclerView.visibility = if (tipo == "pedidos") View.VISIBLE else View.GONE  // Ocultar RecyclerView si no es "pedidos"
+        recyclerView.visibility = if (tipo == "pedidos") View.VISIBLE else View.GONE
 
         val params = uno_gimi_frame.layoutParams
         params.height = if (tipo == "pedidos") alturaMapa else ViewGroup.LayoutParams.MATCH_PARENT
         uno_gimi_frame.layoutParams = params
+
         when (tipo) {
             "pedidos" -> {
                 gimi_flexboxIndicadores.visibility = View.VISIBLE
@@ -532,7 +546,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                 gimi_flexboxIndicadores.visibility = View.GONE
                 gimi_flexboxIndicadores2.visibility = View.VISIBLE
                 gimi_flexboxIndicadores2.removeAllViews()
-                agregarMarcadoresRecojos()
+                agregarMarcadores("recojos") // Agregar marcadores de recojos
 
                 // Contar pedidos por motorizadoRecojo
                 val contadorPedidos = mutableMapOf<String, Int>()
@@ -552,7 +566,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                 gimi_flexboxIndicadores.visibility = View.GONE
                 gimi_flexboxIndicadores2.visibility = View.VISIBLE
                 gimi_flexboxIndicadores2.removeAllViews()
-                agregarMarcadoresEntregas()
+                agregarMarcadores("entregas") // Agregar marcadores de entregas
 
                 // Contar pedidos por motorizadoEntrega
                 val contadorPedidos = mutableMapOf<String, Int>()
@@ -567,6 +581,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                     gimi_flexboxIndicadores2.addView(cardView)
                 }
             }
+
         }
     }
     private fun agregarMarcadoresRecojos() {
