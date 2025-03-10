@@ -103,15 +103,73 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
 
     fun filterList(query: String?) {
         if (query.isNullOrEmpty()) {
-            // Si la consulta está vacía, muestra todos los elementos
+            // Si la consulta está vacía, restaura las listas originales
             adapter.actualizarLista(listaRecojosOriginal)
+            actualizarMarcadoresEnMapa(puntosRecojoLista)
         } else {
-            // Filtra la lista según el texto de búsqueda
-            val filteredList = listaRecojosOriginal.filter { recojo ->
+            // Filtra lista de ClienteRecojo para el RecyclerView
+            val listaRecojosFiltrada = listaRecojosOriginal.filter { recojo ->
                 recojo.clienteNombre.contains(query, ignoreCase = true) ||
                         recojo.proveedorNombre.contains(query, ignoreCase = true)
             }
-            adapter.actualizarLista(filteredList)
+
+            // Filtra la lista de puntos para los marcadores en el mapa
+            val puntosFiltrados = puntosRecojoLista.filter { punto ->
+                punto.clienteNombre.contains(query, ignoreCase = true) ||
+                        punto.proveedorNombre.contains(query, ignoreCase = true)
+            }
+
+            // Actualiza el RecyclerView
+            adapter.actualizarLista(listaRecojosFiltrada)
+
+            // Actualiza los marcadores en el mapa
+            actualizarMarcadoresEnMapa(puntosFiltrados)
+        }
+    }
+
+    private fun actualizarMarcadoresEnMapa(puntosFiltrados: List<PuntoPedidoCliente>) {
+        mMap?.let { map ->
+            limpiarSoloMarcadores() // Limpiar marcadores antes de agregar nuevos
+
+            for (punto in puntosFiltrados) {
+                val color: Float
+                val posicion: LatLng
+                val titulo: String
+
+                when {
+                    punto.fechaAnulacionPedido != null -> {
+                        color = BitmapDescriptorFactory.HUE_ROSE
+                        posicion = punto.ubicacionCliente
+                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                    }
+                    punto.fechaEntregaPedidoMotorizado != null -> {
+                        color = BitmapDescriptorFactory.HUE_GREEN
+                        posicion = punto.ubicacionCliente
+                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                    }
+                    punto.fechaRecojoPedidoMotorizado == null -> {
+                        color = BitmapDescriptorFactory.HUE_YELLOW
+                        posicion = punto.ubicacionProveedor
+                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                    }
+                    else -> {
+                        color = BitmapDescriptorFactory.HUE_BLUE
+                        posicion = punto.ubicacionCliente
+                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                    }
+                }
+
+                val marker = map.addMarker(
+                    MarkerOptions()
+                        .position(posicion)
+                        .title(titulo)
+                        .icon(BitmapDescriptorFactory.defaultMarker(color))
+                )
+
+                marker?.let { marcadores.add(it) } // Guardar referencia al marcador
+            }
+
+            // Si hay marcadores filtrados, ajusta la cámara al primero o al área que los contenga
         }
     }
 
@@ -545,6 +603,8 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
             }
         }
     }
+
+
 
     fun actualizarMapaSegunSeleccion(tipo: String) {
         recyclerView.visibility = if (tipo == "pedidos") View.VISIBLE else View.GONE
