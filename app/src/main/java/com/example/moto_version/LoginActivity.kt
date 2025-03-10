@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.moto_version.cliente.ClienteMainActivity
-import com.example.moto_version.gimi.GimiMainActivity
 import com.example.moto_version.gimi.GimiMainActivity1
 import com.example.moto_version.moto.MainActivity
 import com.google.android.gms.auth.api.identity.BeginSignInRequest

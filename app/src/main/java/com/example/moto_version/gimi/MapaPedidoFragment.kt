@@ -28,7 +28,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
 import com.example.moto_version.SessionManager
-import com.example.moto_version.gimi.GimiMainActivity.PuntoPedidoCliente
 import com.example.moto_version.models.ClienteRecojo
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -72,14 +71,14 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
     private var entregasListener: ListenerRegistration? = null
     data class PuntoPedidoCliente(val id: String, val ubicacionCliente: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String, val fechaAnulacionPedido: Timestamp?, val ubicacionProveedor: LatLng, val thumbnailFotoEntrega: String, val motorizadoEntrega: String, val motorizadoRecojo: String)
     private val puntosRecojoLista = mutableListOf<PuntoPedidoCliente>()
-    private val puntosRecojoListaEspecial = mutableListOf<PuntoPedidoCliente>()
-    private val puntosEntregaLista = mutableListOf<PuntoPedidoCliente>()
     private var kmlLayer: KmlLayer? = null
     private val marcadores = mutableListOf<Marker>() // Lista para guardar referencia a todos los marcadores
     private val alturaMapa = 700
     private lateinit var gimi_flexboxIndicadores: FlexboxLayout
     private lateinit var gimi_flexboxIndicadores2: FlexboxLayout
     private lateinit var uno_gimi_frame: View
+    private var listaRecojos: List<ClienteRecojo> = emptyList()
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -95,6 +94,25 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
         // Inicializar el mapa correctamente
         val mapFragment = childFragmentManager.findFragmentById(R.id.uno_gimi_map_container) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
+    }
+
+    fun filterList(query: String?) {
+        Log.d("SearchDebug", "Query: $query")
+        Log.d("SearchDebug", "Original list size: ${listaRecojos.size}")
+
+        val filteredList = if (query.isNullOrEmpty()) {
+            listaRecojos
+        } else {
+            listaRecojos.filter { recojos ->
+                val matches = recojos.clienteNombre.contains(query, true) ||
+                        recojos.proveedorNombre.contains(query, true)
+                Log.d("SearchDebug", "Item: ${recojos.clienteNombre} - Matches: $matches")
+                matches
+            }
+        }
+
+        Log.d("SearchDebug", "Filtered list size: ${filteredList.size}")
+        adapter.actualizarLista(filteredList)
     }
 
     override fun onResume() {
@@ -584,27 +602,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
 
         }
     }
-    private fun agregarMarcadoresRecojos() {
-        puntosRecojoLista.forEach { punto ->
-            val marcador = mMap?.addMarker(
-                MarkerOptions()
-                    .position(punto.ubicacionProveedor)
-                    .title("${punto.motorizadoRecojo}")
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
-            )
-        }
-    }
 
-    private fun agregarMarcadoresEntregas() {
-        puntosRecojoLista.forEach { punto ->
-            val marcador = mMap?.addMarker(
-                MarkerOptions()
-                    .position(punto.ubicacionCliente)
-                    .title("${punto.motorizadoEntrega}")
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
-            )
-        }
-    }
     // Función para crear un CardView dinámicamente
     private fun crearIndicador(motorizado: String, cantidad: Int): CardView {
         val cardView = CardView(requireContext()).apply {

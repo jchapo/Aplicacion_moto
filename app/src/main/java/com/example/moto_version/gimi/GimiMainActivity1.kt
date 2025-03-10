@@ -1,13 +1,18 @@
 package com.example.moto_version.gimi
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import androidx.appcompat.widget.SearchView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
 
 
 class GimiMainActivity1 : AppCompatActivity() {
@@ -57,7 +62,11 @@ class GimiMainActivity1 : AppCompatActivity() {
                         .commit()
                 }
                 R.id.nav_cerrar_sesion -> {
-                    // Lógica para cerrar sesión
+                    FirebaseAuth.getInstance().signOut()  // Cerrar sesión en Firebase
+                    val intent = Intent(this, LoginActivity::class.java)  // Redirigir a la pantalla de login
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK  // Eliminar historial de actividades
+                    startActivity(intent)
+                    finish()  // Cerrar la actividad actual
                 }
             }
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -86,6 +95,26 @@ class GimiMainActivity1 : AppCompatActivity() {
         })
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_search, menu)
+
+        val searchItem = menu.findItem(R.id.action_search)
+        val searchView = searchItem.actionView as SearchView
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                // Filtra la lista del RecyclerView en el fragmento
+                mapaPedidoFragment?.filterList(newText)
+                return true
+            }
+        })
+
+        return true
+    }
     private fun configurarFragmentoYActualizar(tipo: String) {
         // Obtener el fragmento actual si ya existe
         val fragment = supportFragmentManager.findFragmentById(R.id.uno_contenedor_principal) as? MapaPedidoFragment

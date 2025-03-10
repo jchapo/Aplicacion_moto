@@ -571,23 +571,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         // Configurar listener para el botón flotante
         val fabMenu = findViewById<FloatingActionButton>(R.id.fab_menu)
         fabMenu.visibility = GONE
-        /*fabMenu.setOnClickListener {
-            if (!drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                drawerLayout.openDrawer(GravityCompat.START)
-            }
-        }*/
-
-        // Configurar navegación del menú lateral
-        /*navView.setNavigationItemSelectedListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.nav_home -> showToast("Inicio")
-                R.id.nav_profile -> showToast("Perfil")
-                R.id.nav_settings -> showToast("Configuración")
-                R.id.nav_about -> showToast("Acerca de")
-            }
-            drawerLayout.closeDrawer(GravityCompat.START)
-            true
-        }*/
 
         actualizarIndicadores()
 
