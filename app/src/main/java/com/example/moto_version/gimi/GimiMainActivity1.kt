@@ -103,12 +103,14 @@ class GimiMainActivity1 : AppCompatActivity() {
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
+                searchView.clearFocus() // Cierra el teclado
+                return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                // Filtra la lista del RecyclerView en el fragmento
-                mapaPedidoFragment?.filterList(newText)
+                mapaPedidoFragment?.let {
+                    it.filterList(newText)
+                }
                 return true
             }
         })

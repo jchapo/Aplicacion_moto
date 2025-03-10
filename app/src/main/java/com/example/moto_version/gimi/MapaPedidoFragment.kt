@@ -70,7 +70,10 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
     private var recojosListener: ListenerRegistration? = null
     private var entregasListener: ListenerRegistration? = null
     data class PuntoPedidoCliente(val id: String, val ubicacionCliente: LatLng, val clienteNombre: String, val proveedorNombre: String, val pedidoCantidadCobrar: String, val pedidoMetodoPago: String, val fechaEntregaPedidoMotorizado: Timestamp?, val fechaRecojoPedidoMotorizado: Timestamp?, val thumbnailFotoRecojo: String, val fechaAnulacionPedido: Timestamp?, val ubicacionProveedor: LatLng, val thumbnailFotoEntrega: String, val motorizadoEntrega: String, val motorizadoRecojo: String)
+    // En MapaPedidoFragment
     private val puntosRecojoLista = mutableListOf<PuntoPedidoCliente>()
+    private var listaRecojosOriginal = listOf<ClienteRecojo>() // Lista original para mantener todos los items
+    private var listaRecojosFiltrada = listOf<ClienteRecojo>() // Lista filtrada para mostrar
     private var kmlLayer: KmlLayer? = null
     private val marcadores = mutableListOf<Marker>() // Lista para guardar referencia a todos los marcadores
     private val alturaMapa = 700
@@ -96,23 +99,20 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
         mapFragment?.getMapAsync(this)
     }
 
+
+
     fun filterList(query: String?) {
-        Log.d("SearchDebug", "Query: $query")
-        Log.d("SearchDebug", "Original list size: ${listaRecojos.size}")
-
-        val filteredList = if (query.isNullOrEmpty()) {
-            listaRecojos
+        if (query.isNullOrEmpty()) {
+            // Si la consulta está vacía, muestra todos los elementos
+            adapter.actualizarLista(listaRecojosOriginal)
         } else {
-            listaRecojos.filter { recojos ->
-                val matches = recojos.clienteNombre.contains(query, true) ||
-                        recojos.proveedorNombre.contains(query, true)
-                Log.d("SearchDebug", "Item: ${recojos.clienteNombre} - Matches: $matches")
-                matches
+            // Filtra la lista según el texto de búsqueda
+            val filteredList = listaRecojosOriginal.filter { recojo ->
+                recojo.clienteNombre.contains(query, ignoreCase = true) ||
+                        recojo.proveedorNombre.contains(query, ignoreCase = true)
             }
+            adapter.actualizarLista(filteredList)
         }
-
-        Log.d("SearchDebug", "Filtered list size: ${filteredList.size}")
-        adapter.actualizarLista(filteredList)
     }
 
     override fun onResume() {
@@ -313,6 +313,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
         } else {
             emptyList() // Si está vacío, devuelve una lista vacía
         }
+        listaRecojosOriginal = listaRecojos // Guarda la lista original
 
         adapter.actualizarLista(listaRecojos)
         actualizarIndicadores()
