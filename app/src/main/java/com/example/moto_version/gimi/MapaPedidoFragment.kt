@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.moto_version.CustomInfoWindowAdapter
 import com.example.moto_version.LoginActivity
 import com.example.moto_version.R
 import com.example.moto_version.SessionManager
@@ -158,6 +159,7 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                         titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
                     }
                 }
+                mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(layoutInflater))
 
                 val marker = map.addMarker(
                     MarkerOptions()
@@ -591,6 +593,8 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                         }
                     }
                 }
+
+                mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(layoutInflater))
 
                 val marker = map.addMarker(
                     MarkerOptions()
