@@ -1,6 +1,6 @@
 package com.example.moto_version.gimi
 
-class Proveedor {
+class Usuario {
     // Getters y Setters
     var nombre: String? = null
     var apellido: String? = null
@@ -8,6 +8,7 @@ class Proveedor {
     var nombreEmpresa: String? = null
     var phone: String? = null
     var rol: String? = null
+    var ruta: String? = null
 
     // Constructor vacío para Firebase
     constructor()
@@ -19,7 +20,8 @@ class Proveedor {
         email: String?,
         nombreEmpresa: String?,
         phone: String?,
-        rol: String?
+        rol: String?,
+        ruta: String?
     ) {
         this.nombre = nombre
         this.apellido = apellido
@@ -27,6 +29,7 @@ class Proveedor {
         this.nombreEmpresa = nombreEmpresa
         this.phone = phone
         this.rol = rol
+        this.ruta = ruta
     }
 
     val nombreCompleto: String

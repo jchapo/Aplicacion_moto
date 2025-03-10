@@ -68,7 +68,7 @@
             android:exported="true" />
 
         <activity android:name=".cliente.ClienteDetalleRecojoActivity" />
-        <activity android:name=".gimi.ProveedoresActivity" />
+        <activity android:name=".gimi.AgregarUsuarioActivity" />
         <activity android:name=".cliente.OrderFormActivity" />
 
         <activity

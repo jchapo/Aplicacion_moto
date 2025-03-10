@@ -12,8 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.moto_version.R
 
 
-class ProveedoresAdapter(private val context: Context, private var proveedores: List<Usuario>?) :
-    RecyclerView.Adapter<ProveedoresAdapter.ProveedorViewHolder>() {
+class MotorizadosAdapter(private val context: Context, private var motorizados: List<Usuario>?) :
+    RecyclerView.Adapter<MotorizadosAdapter.ProveedorViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProveedorViewHolder {
         val view: View = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_proveedor, parent, false)
@@ -21,28 +21,36 @@ class ProveedoresAdapter(private val context: Context, private var proveedores: 
     }
 
     override fun onBindViewHolder(holder: ProveedorViewHolder, position: Int) {
-        val proveedor = proveedores!![position]
+        val proveedor = motorizados!![position]
         holder.tvNombreEmpresa.text = proveedor.nombreEmpresa
         holder.tvNombreCompleto.text = proveedor.nombreCompleto
         holder.tvEmail.text = proveedor.email
 
-        holder.btnLlamar.setOnClickListener { v: View? ->
+        // Acción para el botón de llamada
+        holder.btnLlamar.setOnClickListener {
             val phone = proveedor.phone
-            if (phone != null && !phone.isEmpty()) {
-                val intent =
-                    Intent(Intent.ACTION_DIAL)
-                intent.setData(Uri.parse("tel:$phone"))
+            if (!phone.isNullOrEmpty()) {
+                val intent = Intent(Intent.ACTION_DIAL)
+                intent.data = Uri.parse("tel:$phone")
                 context.startActivity(intent)
             }
+        }
+
+        // Acción para el clic en el resto del item
+        holder.itemView.setOnClickListener {
+            val intent = Intent(context, AgregarUsuarioActivity::class.java)
+            intent.putExtra("userId", proveedor.phone)
+            intent.putExtra("tipoUsuario", "Motorizado")
+            context.startActivity(intent)
         }
     }
 
     override fun getItemCount(): Int {
-        return if (proveedores != null) proveedores!!.size else 0
+        return if (motorizados != null) motorizados!!.size else 0
     }
 
-    fun updateProveedores(newProveedores: List<Usuario>?) {
-        this.proveedores = newProveedores
+    fun updateMotorizados(newMotorizados: List<Usuario>?) {
+        this.motorizados = newMotorizados
         notifyDataSetChanged()
     }
 

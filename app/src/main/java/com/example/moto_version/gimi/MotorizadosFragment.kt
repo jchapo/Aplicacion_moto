@@ -15,12 +15,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 
-class ProveedoresFragment : Fragment() {
+class MotorizadosFragment : Fragment() {
 
-    private lateinit var recyclerViewProveedores: RecyclerView
-    private lateinit var adapter: ProveedoresAdapter
-    private lateinit var fabAgregarProveedor: FloatingActionButton
-    private lateinit var listaProveedores: MutableList<Usuario>
+    private lateinit var recyclerViewMotorizados: RecyclerView
+    private lateinit var adapter: MotorizadosAdapter
+    private lateinit var fabAgregarMotorizado: FloatingActionButton
+    private lateinit var listaMotorizados: MutableList<Usuario>
     private lateinit var tvEmptyView: View
     private lateinit var db: FirebaseFirestore
 
@@ -31,9 +31,9 @@ class ProveedoresFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_usuarios, container, false)
 
         // Inicialización de vistas
-        recyclerViewProveedores = view.findViewById(R.id.recyclerViewUsuarios)
+        recyclerViewMotorizados = view.findViewById(R.id.recyclerViewUsuarios)
         tvEmptyView = view.findViewById(R.id.tvEmptyViewUsuarios)
-        fabAgregarProveedor = view.findViewById(R.id.fabAgregarUsuario)
+        fabAgregarMotorizado = view.findViewById(R.id.fabAgregarUsuario)
 
         return view
     }
@@ -45,55 +45,56 @@ class ProveedoresFragment : Fragment() {
         db = FirebaseFirestore.getInstance()
 
         // Configuración del RecyclerView
-        listaProveedores = mutableListOf()
-        adapter = ProveedoresAdapter(requireContext(), listaProveedores)
-        recyclerViewProveedores.layoutManager = LinearLayoutManager(requireContext())
-        recyclerViewProveedores.adapter = adapter
+        listaMotorizados = mutableListOf()
+        adapter = MotorizadosAdapter(requireContext(), listaMotorizados)
+        recyclerViewMotorizados.layoutManager = LinearLayoutManager(requireContext())
+        recyclerViewMotorizados.adapter = adapter
 
-        // Cargar proveedores desde Firestore
-        cargarProveedores()
+        // Cargar motorizados desde Firestore
+        cargarMotorizados()
 
         // Configuración del FloatingActionButton
-        fabAgregarProveedor.setOnClickListener {
+        fabAgregarMotorizado.setOnClickListener {
             val intent = Intent(requireContext(), AgregarUsuarioActivity::class.java)
-            intent.putExtra("tipoUsuario", "Proveedor")
+            intent.putExtra("tipoUsuario", "Motorizado")
             startActivity(intent)
         }
+
 
     }
 
     override fun onResume() {
         super.onResume()
-        // Recargar proveedores al volver a la actividad
-        cargarProveedores()
+        // Recargar motorizados al volver a la actividad
+        cargarMotorizados()
     }
 
-    private fun cargarProveedores() {
+    private fun cargarMotorizados() {
         val debugFlag = true // Activar o desactivar la depuración
 
         db.collection("usuarios")
-            .whereEqualTo("rol", "Proveedor").get()
+            .whereEqualTo("rol", "Motorizado").get()
             .addOnCompleteListener { task: Task<QuerySnapshot> ->
                 if (task.isSuccessful) {
-                    listaProveedores.clear()
+                    listaMotorizados.clear()
 
                     for (document in task.result) {
                         val proveedor = document.toObject(Usuario::class.java)
-                        listaProveedores.add(proveedor)
+                        listaMotorizados.add(proveedor)
                     }
 
                     adapter.notifyDataSetChanged()
 
-                    // Mostrar mensaje si no hay proveedores
-                    if (listaProveedores.isEmpty()) {
-                        recyclerViewProveedores.visibility = View.GONE
+                    // Mostrar mensaje si no hay motorizados
+                    if (listaMotorizados.isEmpty()) {
+                        recyclerViewMotorizados.visibility = View.GONE
                         tvEmptyView.visibility = View.VISIBLE
                     } else {
-                        recyclerViewProveedores.visibility = View.VISIBLE
+                        recyclerViewMotorizados.visibility = View.VISIBLE
                         tvEmptyView.visibility = View.GONE
                     }
                 } else {
-                    if (debugFlag) Log.e("DEBUG", "Error al obtener proveedores", task.exception)
+                    if (debugFlag) Log.e("DEBUG", "Error al obtener motorizados", task.exception)
                 }
             }
     }

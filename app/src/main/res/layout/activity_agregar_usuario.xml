@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".proveedores.AgregarProveedorActivity">
+    tools:context=".gimi.AgregarUsuarioActivity">
 
     <!-- Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
@@ -15,7 +15,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="Agregar Proveedor"
+        app:title="Titulo Agregar"
         app:titleTextColor="@android:color/white"/>
 
     <!-- Contenido principal -->
@@ -135,16 +135,16 @@
         android:padding="16dp">
 
         <Button
-            android:id="@+id/btnCrearProveedor"
+            android:id="@+id/btnAgregarUsuario"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Crear"
+            android:text="Boton Agregar"
             android:enabled="false"
             android:textColor="@android:color/white"
             android:textStyle="bold"/>
 
         <ProgressBar
-            android:id="@+id/progressBar"
+            android:id="@+id/progressBarAgregar"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:layout_gravity="center"

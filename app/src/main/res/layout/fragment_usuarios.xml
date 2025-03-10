@@ -3,11 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".gimi.ProveedoresFragment">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewProveedores"
+        android:id="@+id/recyclerViewUsuarios"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp"
@@ -15,21 +14,21 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
     <TextView
-        android:id="@+id/tvEmptyView"
+        android:id="@+id/tvEmptyViewUsuarios"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:text="No hay proveedores disponibles"
+        android:text="No hay usuarios disponibles"
         android:visibility="gone"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAgregarProveedor"
+        android:id="@+id/fabAgregarUsuario"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Agregar proveedor"
+        android:contentDescription="Agregar usuario"
         app:srcCompat="@android:drawable/ic_input_add"/>
 
 </FrameLayout>

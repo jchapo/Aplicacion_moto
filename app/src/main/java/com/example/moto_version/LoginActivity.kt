@@ -112,7 +112,8 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun obtenerRolDeFirestore(email: String) {
-        db.collection("usuarios").whereEqualTo("email", email).get()
+        db.collection("usuarios")
+            .whereEqualTo("email", email).get()
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty) {
                     val document = documents.documents[0]
@@ -135,7 +136,7 @@ class LoginActivity : AppCompatActivity() {
                             startActivity(intent)
                             finish()
                         }
-                        "Cliente" -> {
+                        "Proveedor" -> {
                             val intent = Intent(this, ClienteMainActivity::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             startActivity(intent)

@@ -42,7 +42,23 @@ class GimiMainActivity1 : AppCompatActivity() {
                 R.id.nav_map_pedidos -> configurarFragmentoYActualizar("pedidos")
                 R.id.nav_map_recojos -> configurarFragmentoYActualizar("recojos")
                 R.id.nav_map_entregas -> configurarFragmentoYActualizar("entregas")
-                R.id.nav_proveedores -> configurarFragmentoYActualizar("proveedores")
+                R.id.nav_proveedores -> {
+                    toolbar.title = "Proveedores"
+                    val proveedoresFragment = ProveedoresFragment()
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.uno_contenedor_principal, proveedoresFragment)
+                        .commit()
+                }
+                R.id.nav_motorizados -> {
+                    toolbar.title = "Motorizados"
+                    val motorizadosFragment = MotorizadosFragment()
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.uno_contenedor_principal, motorizadosFragment)
+                        .commit()
+                }
+                R.id.nav_cerrar_sesion -> {
+                    // Lógica para cerrar sesión
+                }
             }
             drawerLayout.closeDrawer(GravityCompat.START)
             true
