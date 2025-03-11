@@ -375,7 +375,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     MarkerOptions()
                         .position(punto.ubicacion)
                         .title("Recojo: ${punto.proveedorNombre}")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
                 )
                 marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)
@@ -387,7 +387,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     MarkerOptions()
                         .position(punto.ubicacion)
                         .title("Entrega: ${punto.clienteNombre}")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
                 )
                 marker?.let { marcadores.add(it) } // Guardar referencia al marcador
                 boundsBuilder.include(punto.ubicacion)

@@ -51,12 +51,12 @@ class MiAdapter(private var listaRecojos: List<Recojo>) : RecyclerView.Adapter<M
         if (recojo.fechaRecojoPedidoMotorizado != null) {
             // Si es distinto de null, cambiar el color de fondo del CardView usando backgroundTint
             holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context,
-                R.color.md_theme_errorContainer
+                R.color.md_theme_primaryContainer
             )
         } else {
             // Si es null, usar otro color (o el color predeterminado)
             holder.itemCard.backgroundTintList = ContextCompat.getColorStateList(holder.itemView.context,
-                R.color.md_theme_primaryContainer
+                R.color.amarillo
             )
         }
 

@@ -136,35 +136,40 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                 val color: Float
                 val posicion: LatLng
                 val titulo: String
+                val snippet: String
 
                 when {
                     punto.fechaAnulacionPedido != null -> {
                         color = BitmapDescriptorFactory.HUE_ROSE
                         posicion = punto.ubicacionCliente
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                        titulo = "Entrega: ${punto.clienteNombre}" // Título
+                        snippet = "Recojo: ${punto.proveedorNombre}" // Snippet
                     }
                     punto.fechaEntregaPedidoMotorizado != null -> {
                         color = BitmapDescriptorFactory.HUE_GREEN
                         posicion = punto.ubicacionCliente
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                        titulo = "Entrega: ${punto.clienteNombre}" // Título
+                        snippet = "Recojo: ${punto.proveedorNombre}" // Snippet
                     }
                     punto.fechaRecojoPedidoMotorizado == null -> {
                         color = BitmapDescriptorFactory.HUE_YELLOW
                         posicion = punto.ubicacionProveedor
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                        titulo = "Entrega: ${punto.clienteNombre}" // Título
+                        snippet = "Recojo: ${punto.proveedorNombre}" // Snippet
                     }
                     else -> {
                         color = BitmapDescriptorFactory.HUE_BLUE
                         posicion = punto.ubicacionCliente
-                        titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                        titulo = "Entrega: ${punto.clienteNombre}" // Título
+                        snippet = "Recojo: ${punto.proveedorNombre}" // Snippet
                     }
                 }
-                mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(layoutInflater))
 
                 val marker = map.addMarker(
                     MarkerOptions()
                         .position(posicion)
                         .title(titulo)
+                        .snippet(snippet)
                         .icon(BitmapDescriptorFactory.defaultMarker(color))
                 )
 
@@ -555,51 +560,57 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
                 val color: Float
                 val posicion: LatLng
                 val titulo: String
+                val snippet: String
 
                 when (tipo) {
                     "recojos" -> {
                         color = BitmapDescriptorFactory.HUE_BLUE
                         posicion = punto.ubicacionProveedor
                         titulo = "Recojo: ${punto.motorizadoRecojo}"
+                        snippet = "Proveedor: ${punto.proveedorNombre}"
                     }
                     "entregas" -> {
                         color = BitmapDescriptorFactory.HUE_GREEN
                         posicion = punto.ubicacionCliente
                         titulo = "Entrega: ${punto.motorizadoEntrega}"
+                        snippet = "Cliente: ${punto.clienteNombre}"
                     }
                     else -> {
                         // Marcadores para pedidos (comportamiento por defecto)
                         when {
                             punto.fechaAnulacionPedido != null -> {
-                                color = BitmapDescriptorFactory.HUE_ROSE
+                                color = BitmapDescriptorFactory.HUE_RED
                                 posicion = punto.ubicacionCliente
-                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                                titulo = "Entrega: ${punto.clienteNombre}"
+                                snippet = "Recojo: ${punto.proveedorNombre}"
                             }
                             punto.fechaEntregaPedidoMotorizado != null -> {
                                 color = BitmapDescriptorFactory.HUE_GREEN
                                 posicion = punto.ubicacionCliente
-                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                                titulo = "Entrega: ${punto.clienteNombre}"
+                                snippet = "Recojo: ${punto.proveedorNombre}"
                             }
                             punto.fechaRecojoPedidoMotorizado == null -> {
                                 color = BitmapDescriptorFactory.HUE_YELLOW
                                 posicion = punto.ubicacionProveedor
-                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                                titulo = "Entrega: ${punto.clienteNombre}"
+                                snippet = "Recojo: ${punto.proveedorNombre}"
                             }
                             else -> {
                                 color = BitmapDescriptorFactory.HUE_BLUE
                                 posicion = punto.ubicacionCliente
-                                titulo = "Entrega: ${punto.clienteNombre} \n Recojo: ${punto.proveedorNombre}"
+                                titulo = "Entrega: ${punto.clienteNombre}"
+                                snippet = "Recojo: ${punto.proveedorNombre}"
                             }
                         }
                     }
                 }
 
-                mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(layoutInflater))
-
                 val marker = map.addMarker(
                     MarkerOptions()
                         .position(posicion)
                         .title(titulo)
+                        .snippet(snippet)
                         .icon(BitmapDescriptorFactory.defaultMarker(color))
                 )
 
