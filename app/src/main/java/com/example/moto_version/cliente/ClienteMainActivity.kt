@@ -187,7 +187,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Configurar un listener en tiempo real
         recojosListener = db.collection("recojos")
-            .whereEqualTo("proveedorTelefono", phone)
+            .whereEqualTo("proveedorNombre", nombreEmpresa)
             .addSnapshotListener { snapshots, error ->
                 if (error != null) {
                     Log.e("Firestore", "Error al obtener documentos", error)
@@ -214,6 +214,8 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val fechaEntregaPedidoMotorizado = doc.getTimestamp("fechaEntregaPedidoMotorizado")
                     val fechaRecojoPedidoMotorizado = doc.getTimestamp("fechaRecojoPedidoMotorizado")
                     val fechaAnulacionPedido = doc.getTimestamp("fechaAnulacionPedido")
+                    val thumbnailFotoRecojo = doc.getString("thumbnailFotoRecojo") ?: ""
+
 
                     // Obtener coordenadas
                     val coordenadas = doc.get("pedidoCoordenadas") as? Map<String, Any>
@@ -222,7 +224,7 @@ class ClienteMainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     if (latitud != null && longitud != null) {
                         val ubicacion = LatLng(latitud, longitud)
-                        puntosRecojoLista.add(PuntoPedidoCliente(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, "",fechaAnulacionPedido))
+                        puntosRecojoLista.add(PuntoPedidoCliente(id, ubicacion, clienteNombre, proveedorNombre, pedidoCantidadCobrar, pedidoMetodoPago, fechaEntregaPedidoMotorizado, fechaRecojoPedidoMotorizado, thumbnailFotoRecojo,fechaAnulacionPedido))
                         Log.d("Firestore", "Punto recojo: $ubicacion - Cliente: $clienteNombre")
                     }
                 }

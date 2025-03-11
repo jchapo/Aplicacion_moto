@@ -1,6 +1,7 @@
 package com.example.moto_version.cliente
 
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,7 +36,8 @@ class ClienteMiAdapter(private var listaRecojos: List<ClienteRecojo>) : Recycler
         holder.tvClienteNombre.text = recojo.clienteNombre
         holder.tvProveedorNombre.text = recojo.proveedorNombre
         holder.tvPrecio.text = "S/ ${recojo.pedidoCantidadCobrar}"
-        if (recojo.fechaRecojoPedidoMotorizado != null) {
+        Log.d("GlideDebug", "URL de la imagen: ${recojo.clienteNombre}")
+        if (recojo.fechaEntregaPedidoMotorizado != null) {
             // Cargar la imagen desde thumbnailFotoRecojo si la fecha no es null
             Glide.with(holder.itemView.context)
                 .load(recojo.thumbnailFotoRecojo)
