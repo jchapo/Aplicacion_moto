@@ -20,12 +20,15 @@ import android.graphics.Matrix
 import android.os.Build
 import android.provider.MediaStore
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.cardview.widget.CardView
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import com.bumptech.glide.Glide
@@ -48,16 +51,23 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private var item: Item? = null  // Variable global
     private lateinit var btnCamara: ImageButton
+    private lateinit var btnDinero: ImageButton
     private lateinit var btnCheck: ImageButton
     private lateinit var btnEditarCliente: ImageButton
     private lateinit var btnEditarPedido: ImageButton
     private lateinit var imagenRecojo: ImageView
     private lateinit var imagenEntrega: ImageView
-    private lateinit var tvDetalleScroll: ScrollView
+    private lateinit var imagenDinero: ImageView
+    private lateinit var linearLayoutContacto: LinearLayout
+    private lateinit var cardDinero: CardView
+    private lateinit var tvCardProveedor: LinearLayout
     private var seRecogioImagen: Boolean = false
     private var seEntregoImagen: Boolean = false
+    private var seDineroImagen: Boolean = false
     private var seSubioRecogioImagen: Boolean = false
     private var seSubioEntregaImagen: Boolean = false
+    private var seSubioDineroImagen: Boolean = false
+
     private var nombreEmpresa = SessionManager.nombreEmpresa ?: ""
     private var orderId: String = ""
 
@@ -96,7 +106,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val tvProveedor = findViewById<TextView>(R.id.tvDetalleProveedor)
         val tvPrecio = findViewById<TextView>(R.id.tvDetallePrecio)
         val tvCardCliente = findViewById<LinearLayout>(R.id.tvCardCliente)
-        val tvCardProveedor = findViewById<LinearLayout>(R.id.tvCardProveedor)
         val tvDetalleScroll: ScrollView = findViewById(R.id.tvDetalleScroll)
 
 
@@ -106,15 +115,20 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val btnWhatsappProveedor = findViewById<ImageButton>(R.id.btnWhatsappProveedor)
         val frameEditarPedido = findViewById<FrameLayout>(R.id.frameEditarPedido)
         btnCamara = findViewById<ImageButton>(R.id.btnCamara)
+        btnDinero = findViewById<ImageButton>(R.id.btnDinero)
 
         val btnMapsPedido = findViewById<ImageButton>(R.id.btnMapsCliente)
         val btnMapsRecojo = findViewById<ImageButton>(R.id.btnMapsProveedor)
 
         imagenRecojo = findViewById(R.id.imagenRecojo)
         imagenEntrega = findViewById(R.id.imagenEntrega)
+        imagenDinero = findViewById(R.id.imagenDinero)
         btnCheck = findViewById(R.id.btnCheck)
         btnEditarCliente = findViewById(R.id.btnEditarCliente)
         btnEditarPedido = findViewById(R.id.btnEditarPedido)
+        linearLayoutContacto = findViewById(R.id.linearLayoutContacto)
+        cardDinero = findViewById(R.id.cardDinero)
+        tvCardProveedor = findViewById(R.id.tvCardProveedor)
 
         if (SessionManager.nombreEmpresa == "ADMIN_NANPI_COURIER") {
             frameEditarPedido.visibility = View.VISIBLE  // Mostrar botón
@@ -134,14 +148,25 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
 
         btnCamara.setOnClickListener {
+            seSubioEntregaImagen = false
             btnCamara.isEnabled = false
+            val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+            btnCamara.backgroundTintList = color
+            btnCheck.isEnabled = false  // Deshabilita el botón
+            btnCheck.alpha = 0.5f
+            btnCheck.backgroundTintList = null
+            btnDinero.isEnabled = false  // Deshabilita el botón
+            btnDinero.alpha = 0.5f
+            btnDinero.backgroundTintList = null
             abrirCamara()
         }
+
+
 
         btnCheck.setOnClickListener {
             if (item?.fechaRecojoPedidoMotorizado == null && seSubioRecogioImagen) {
                 actualizarEstadoPedido(1)
-            } else if (item?.fechaRecojoPedidoMotorizado != null && seSubioEntregaImagen) {
+            } else if (item?.fechaRecojoPedidoMotorizado != null && seSubioEntregaImagen && seSubioDineroImagen) {
                 actualizarEstadoPedido(2)
             }
         }
@@ -163,6 +188,17 @@ class DetalleRecojoActivity : AppCompatActivity() {
             tvPrecio.setOnClickListener {
                 mostrarDialogoConImagen()
             }
+            btnDinero.visibility = VISIBLE
+            btnDinero.alpha = 0.5f       // Reduce la opacidad al 50%
+            btnDinero.setOnClickListener {
+                val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+                btnDinero.backgroundTintList = color
+                btnCheck.isEnabled = false  // Deshabilita el botón
+                btnCheck.alpha = 0.5f
+                btnCheck.backgroundTintList = null
+                abrirCamara()
+            }
+            btnDinero.isEnabled = false  // Deshabilita el botón
         }
 
         db = FirebaseFirestore.getInstance()
@@ -439,12 +475,18 @@ class DetalleRecojoActivity : AppCompatActivity() {
                     seRecogioImagen = true
                     imagenRecojo.setImageURI(photoUri) // Mostrar la imagen capturada
                     subirFotosFirestore(photoUri!!, 1) // Subir imagen a Firestore
-                } else {
+                } else if (item?.fechaEntregaPedidoMotorizado == null && seSubioEntregaImagen.equals(false)){
                     // Caso de entrega
                     seSubioEntregaImagen = false
                     seEntregoImagen = true
                     imagenEntrega.setImageURI(photoUri) // Mostrar la imagen capturada
-                    subirFotosFirestore(photoUri!!, 21) // Subir imagen a Firestore
+                    subirFotosFirestore(photoUri!!, 2) // Subir imagen a Firestore
+                } else {
+                    // Caso de dinero
+                    seSubioDineroImagen = false
+                    seDineroImagen = true
+                    imagenDinero.setImageURI(photoUri) // Mostrar la imagen capturada
+                    subirFotosFirestore(photoUri!!, 3) // Subir imagen a Firestore
                 }
             } catch (e: Exception) {
                 Log.e("Cámara", "Error al procesar la imagen: ${e.message}")
@@ -462,129 +504,121 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private fun getCompressedImageAndThumbnail(
         context: Context,
         uri: Uri,
-        compressionQuality: Int = 60, // Similar a WhatsApp (~70%)
+        compressionQuality: Int = 60, // Calidad de compresión
+        maxSize: Int = 550, // Tamaño máximo de la imagen original
         thumbnailSize: Int = 250 // Tamaño máximo del thumbnail
     ): Pair<ByteArray, ByteArray> {
-        // Abrir el stream de la imagen original
-        val inputStream = context.contentResolver.openInputStream(uri)
+        // Obtener dimensiones originales
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
 
-        // Obtener las dimensiones originales sin cargar toda la imagen
-        val options = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
-        BitmapFactory.decodeStream(inputStream, null, options)
-        inputStream?.close()
+        val originalWidth = options.outWidth
+        val originalHeight = options.outHeight
 
-        // Reabrir el stream para decodificar la imagen real
-        val inputStream2 = context.contentResolver.openInputStream(uri)
+        // **1. Calcular inSampleSize para una carga eficiente**
+        val inSampleSize = calculateInSampleSize(originalWidth, originalHeight, maxSize, maxSize)
 
-        // Decodificar la imagen completa
-        val originalBitmap = BitmapFactory.decodeStream(inputStream2)
-        inputStream2?.close()
+        // **2. Decodificar la imagen con inSampleSize**
+        val decodeOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
+        val originalBitmap = context.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, decodeOptions)
+        } ?: return Pair(ByteArray(0), ByteArray(0))
 
-        // Corregir la orientación de la imagen
+        // **3. Corregir la orientación de la imagen**
         val correctedBitmap = correctOrientation(context, uri, originalBitmap)
 
-        // 1. Generar la imagen comprimida (estilo WhatsApp)
+        // **4. Redimensionar la imagen manteniendo proporciones**
+        val (newWidth, newHeight) = calculateNewDimensions(correctedBitmap.width, correctedBitmap.height, maxSize)
+        val resizedBitmap = Bitmap.createScaledBitmap(correctedBitmap, newWidth, newHeight, true)
+
+        // **5. Comprimir la imagen redimensionada**
         val compressedBaos = ByteArrayOutputStream()
-        correctedBitmap.compress(Bitmap.CompressFormat.JPEG, compressionQuality, compressedBaos)
+        resizedBitmap.compress(Bitmap.CompressFormat.JPEG, compressionQuality, compressedBaos)
         val compressedBytes = compressedBaos.toByteArray()
 
-        // 2. Calcular las dimensiones del thumbnail manteniendo la relación de aspecto
-        val width = correctedBitmap.width
-        val height = correctedBitmap.height
-        val ratio = width.toFloat() / height.toFloat()
+        // **6. Generar el thumbnail con el mismo principio**
+        val (thumbnailWidth, thumbnailHeight) = calculateNewDimensions(newWidth, newHeight, thumbnailSize)
+        val thumbnailBitmap = Bitmap.createScaledBitmap(resizedBitmap, thumbnailWidth, thumbnailHeight, true)
 
-        val thumbnailWidth: Int
-        val thumbnailHeight: Int
-
-        if (width > height) {
-            thumbnailWidth = thumbnailSize
-            thumbnailHeight = (thumbnailSize / ratio).toInt()
-        } else {
-            thumbnailHeight = thumbnailSize
-            thumbnailWidth = (thumbnailSize * ratio).toInt()
-        }
-
-        // Crear el thumbnail redimensionando el bitmap
-        val thumbnailBitmap = Bitmap.createScaledBitmap(
-            correctedBitmap,
-            thumbnailWidth,
-            thumbnailHeight,
-            true
-        )
-
-        // Comprimir el thumbnail
         val thumbnailBaos = ByteArrayOutputStream()
         thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 60, thumbnailBaos)
         val thumbnailBytes = thumbnailBaos.toByteArray()
 
-        // Liberar los recursos
-        if (thumbnailBitmap != correctedBitmap) {
-            thumbnailBitmap.recycle()
-        }
-        if (correctedBitmap != originalBitmap) {
-            correctedBitmap.recycle()
-        }
+        // **Liberar memoria**
+        resizedBitmap.recycle()
+        if (thumbnailBitmap != resizedBitmap) thumbnailBitmap.recycle()
+        if (correctedBitmap != originalBitmap) correctedBitmap.recycle()
         originalBitmap.recycle()
 
         return Pair(compressedBytes, thumbnailBytes)
     }
 
-    private fun correctOrientation(context: Context, uri: Uri, bitmap: Bitmap): Bitmap {
-        var inputStream: InputStream? = null
-        try {
-            inputStream = context.contentResolver.openInputStream(uri)
-            val exif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                ExifInterface(inputStream!!)
-            } else {
-                uri.path?.let { ExifInterface(it) } ?: return bitmap
+
+    private fun calculateInSampleSize(origWidth: Int, origHeight: Int, reqWidth: Int, reqHeight: Int): Int {
+        var inSampleSize = 1
+
+        if (origHeight > reqHeight || origWidth > reqWidth) {
+            val halfHeight = origHeight / 2
+            val halfWidth = origWidth / 2
+
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
             }
+        }
 
-            val orientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_UNDEFINED
-            )
-
-            val matrix = Matrix()
-            when (orientation) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
-                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
-                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
-                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
-                ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
-                ExifInterface.ORIENTATION_TRANSPOSE -> {
-                    matrix.preRotate(90f)
-                    matrix.preScale(-1f, 1f)
-                }
-                ExifInterface.ORIENTATION_TRANSVERSE -> {
-                    matrix.preRotate(270f)
-                    matrix.preScale(-1f, 1f)
-                }
-                else -> return bitmap
-            }
-
-            return try {
-                val rotatedBitmap = Bitmap.createBitmap(
-                    bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-                )
-
-                if (rotatedBitmap != bitmap) {
-                    bitmap.recycle()
-                }
-
-                rotatedBitmap
-            } catch (e: OutOfMemoryError) {
-                Log.e("ImageProcessing", "OutOfMemoryError al rotar la imagen: ${e.message}")
-                bitmap
-            }
-        } catch (e: Exception) {
-            Log.e("ImageProcessing", "Error al corregir orientación: ${e.message}")
-            return bitmap
-        } finally {
-            inputStream?.close()
+        return inSampleSize
+    }
+    private fun calculateNewDimensions(width: Int, height: Int, maxSize: Int): Pair<Int, Int> {
+        return if (width > height) {
+            if (width > maxSize) maxSize to (height * maxSize / width) else width to height
+        } else {
+            if (height > maxSize) (width * maxSize / height) to maxSize else width to height
         }
     }
+    private fun correctOrientation(context: Context, uri: Uri, bitmap: Bitmap): Bitmap {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val exif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    ExifInterface(inputStream)
+                } else {
+                    uri.path?.let { ExifInterface(it) } ?: return bitmap
+                }
+
+                val orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_UNDEFINED
+                )
+
+                val matrix = Matrix()
+                when (orientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                    ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                    ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                    ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+                    ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+                    ExifInterface.ORIENTATION_TRANSPOSE -> {
+                        matrix.preRotate(90f)
+                        matrix.preScale(-1f, 1f)
+                    }
+                    ExifInterface.ORIENTATION_TRANSVERSE -> {
+                        matrix.preRotate(270f)
+                        matrix.preScale(-1f, 1f)
+                    }
+                    else -> return bitmap
+                }
+
+                val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+
+                if (rotatedBitmap != bitmap) bitmap.recycle()
+
+                rotatedBitmap
+            } ?: bitmap
+        } catch (e: Exception) {
+            Log.e("ImageProcessing", "Error al corregir orientación: ${e.message}")
+            bitmap
+        }
+    }
+
 
     private fun eliminarArchivo(uri: Uri) {
         try {
@@ -599,10 +633,19 @@ class DetalleRecojoActivity : AppCompatActivity() {
     }
 
     private fun subirFotosFirestore(imageUri: Uri, tipo: Int) {
-        btnCamara.setImageResource(R.drawable.loading_animation)
+        var tipoOperacion = ""
+        if (tipo == 1){
+            btnCamara.setImageResource(R.drawable.loading_animation)
+            tipoOperacion = "Recojo"
+        } else if (tipo == 2){
+            btnCamara.setImageResource(R.drawable.loading_animation)
+            tipoOperacion = "Entrega"
+        } else {
+            btnDinero.setImageResource(R.drawable.loading_animation)
+            tipoOperacion = "Dinero"
+        }
 
         val pedidoId = item?.id ?: return
-        val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
         val collectionName = "recojos"
 
         mainImageUploaded = false
@@ -661,26 +704,56 @@ class DetalleRecojoActivity : AppCompatActivity() {
     }
 
     private fun checkAllUploadsCompleted(tipo: Int) {
+        Log.d("checkAllUploadsCompleted", "Tipo recibido: $tipo")
         if (mainImageUploaded && thumbnailUploaded) {
-            if (tipo == 1) {
-                seSubioRecogioImagen = true
-                //Toast.makeText(this, "Imagen de recojo subida correctamente", Toast.LENGTH_SHORT).show()
-            } else {
-                seSubioEntregaImagen = true
-                //Toast.makeText(this, "Imagen de entrega subida correctamente", Toast.LENGTH_SHORT).show()
+            Log.d("checkAllUploadsCompleted", "mainImageUploaded y thumbnailUploaded son true")
+            when (tipo) {
+                1 -> {
+                    Log.d("checkAllUploadsCompleted", "Caso 1: Recojo")
+                    seSubioRecogioImagen = true
+                    btnCamara.setImageResource(R.drawable.camera_solid)
+                    btnCamara.backgroundTintList = null
+                    btnCamara.isEnabled = true
+
+                    val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+                    btnCheck.backgroundTintList = color
+                    btnCheck.isEnabled = true
+                    btnCheck.alpha = 1f
+                }
+                2 -> {
+                    Log.d("checkAllUploadsCompleted", "Caso 2: Entrega")
+                    seSubioEntregaImagen = true
+                    btnCamara.setImageResource(R.drawable.camera_solid)
+                    btnCamara.backgroundTintList = null
+                    btnCamara.isEnabled = true
+
+                    cardDinero.visibility = VISIBLE
+                    linearLayoutContacto.visibility = GONE
+                    tvCardProveedor.visibility = GONE
+
+                    val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+                    btnDinero.backgroundTintList = color
+                    btnDinero.isEnabled = true
+                    btnDinero.alpha = 1f
+                }
+                else -> {
+                    Log.d("checkAllUploadsCompleted", "Caso 3: Dinero")
+                    seSubioDineroImagen = true
+                    btnDinero.setImageResource(R.drawable.money_bill_wave_solid)
+                    btnDinero.backgroundTintList = null
+                    btnDinero.isEnabled = true
+
+                    val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
+                    btnCheck.backgroundTintList = color
+                    btnCheck.isEnabled = true
+                    btnCheck.alpha = 1f
+                }
             }
-
-            btnCamara.setImageResource(R.drawable.camera_solid)
-            btnCamara.backgroundTintList = null
-            btnCamara.isEnabled = true
-
-            val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
-            btnCheck.backgroundTintList = color
-            btnCheck.isEnabled = true
-            btnCheck.alpha = 1f
 
             // Eliminar la imagen después de subida completada
             photoUri?.let { eliminarArchivo(it) }
+        } else {
+            Log.d("checkAllUploadsCompleted", "mainImageUploaded o thumbnailUploaded son false")
         }
     }
 
@@ -690,46 +763,27 @@ class DetalleRecojoActivity : AppCompatActivity() {
         btnCamara.isEnabled = true
     }
 
+    private fun actualizarEstadoPedido(tipo: Int) {
+        val pedidoId = item?.id ?: return
+        val fecha = Timestamp.now()
 
-    // Método para verificar si todas las subidas han terminado
-    /*private fun checkAllUploadsCompleted(tipo: Int, mainImageUploaded: Boolean, thumbnailUploaded: Boolean) {
-        if (mainImageUploaded && thumbnailUploaded) {
-            // Restaurar el ícono de la cámara
-            btnCamara.setImageResource(R.drawable.camera_solid)
-            btnCamara.isEnabled = true
-            btnCamara.background = null
+        val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
+        val campoFecha = if (tipo == 1) "fechaRecojoPedidoMotorizado" else "fechaEntregaPedidoMotorizado"
+        val collectionName = "recojos"
 
-            // Activar botón de verificación
-            val typedValue = TypedValue()
-            theme.resolveAttribute(android.R.attr.colorAccent, typedValue, true)
-            btnCheck.setBackgroundColor(typedValue.data)
-            btnCheck.isEnabled = true
-
-            if (tipo == 1) seSubioRecogioImagen = true else seSubioEntregaImagen = true
-        }
-    }*/
-
-
-        private fun actualizarEstadoPedido(tipo: Int) {
-            val pedidoId = item?.id ?: return
-            val fecha = Timestamp.now()
-
-            val tipoOperacion = if (tipo == 1) "Recojo" else "Entrega"
-            val campoFecha = if (tipo == 1) "fechaRecojoPedidoMotorizado" else "fechaEntregaPedidoMotorizado"
-            val collectionName = "recojos"
-
-            val db = FirebaseFirestore.getInstance()
-            db.collection(collectionName).document(pedidoId)
-                .update(campoFecha, fecha)
-                .addOnSuccessListener {
-                    Toast.makeText(this, "$tipoOperacion finalizado con éxito.", Toast.LENGTH_SHORT).show()
-                    finish() // Cierra la actividad y vuelve a la anterior
-                }
-                .addOnFailureListener { e ->
-                    Log.e("Firestore", "Error al actualizar la fecha de $tipoOperacion", e)
-                    Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
-                }
-        }
-
-
+        val db = FirebaseFirestore.getInstance()
+        db.collection(collectionName).document(pedidoId)
+            .update(campoFecha, fecha)
+            .addOnSuccessListener {
+                Toast.makeText(this, "$tipoOperacion finalizado con éxito.", Toast.LENGTH_SHORT).show()
+                finish() // Cierra la actividad y vuelve a la anterior
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error al actualizar la fecha de $tipoOperacion", e)
+                Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
+            }
     }
+
+
+
+}
