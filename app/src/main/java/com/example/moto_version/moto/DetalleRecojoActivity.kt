@@ -59,6 +59,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private lateinit var imagenEntrega: ImageView
     private lateinit var imagenDinero: ImageView
     private lateinit var linearLayoutContacto: LinearLayout
+    private lateinit var layout_botones: LinearLayout
     private lateinit var cardDinero: CardView
     private lateinit var tvCardProveedor: LinearLayout
     private var seRecogioImagen: Boolean = false
@@ -68,7 +69,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private var seSubioEntregaImagen: Boolean = false
     private var seSubioDineroImagen: Boolean = false
 
-    private var nombreEmpresa = SessionManager.nombreEmpresa ?: ""
     private var orderId: String = ""
 
     companion object {
@@ -129,9 +129,15 @@ class DetalleRecojoActivity : AppCompatActivity() {
         linearLayoutContacto = findViewById(R.id.linearLayoutContacto)
         cardDinero = findViewById(R.id.cardDinero)
         tvCardProveedor = findViewById(R.id.tvCardProveedor)
+        layout_botones = findViewById(R.id.layout_botones)
 
-        if (SessionManager.nombreEmpresa == "ADMIN_NANPI_COURIER") {
-            frameEditarPedido.visibility = View.VISIBLE  // Mostrar botón
+        if (SessionManager.rol == "Admin") {
+            if(fechaEntregaPedidoMotorizado != null){
+                layout_botones.visibility = GONE
+                frameEditarPedido.visibility = GONE  // Mostrar botón
+            } else {
+                frameEditarPedido.visibility = VISIBLE  // Mostrar botón
+            }
         }
 
         btnEditarPedido.setOnClickListener {
