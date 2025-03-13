@@ -134,7 +134,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         if (SessionManager.rol == "Admin") {
             if(fechaEntregaPedidoMotorizado != null){
                 layout_botones.visibility = GONE
-                frameEditarPedido.visibility = GONE  // Mostrar botón
+                frameEditarPedido.visibility = VISIBLE  // Mostrar botón
             } else {
                 frameEditarPedido.visibility = VISIBLE  // Mostrar botón
             }
