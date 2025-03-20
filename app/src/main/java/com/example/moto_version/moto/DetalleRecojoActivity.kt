@@ -28,6 +28,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
@@ -44,6 +45,9 @@ import java.io.InputStream
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.example.moto_version.SessionManager
 import com.example.moto_version.cliente.OrderFormActivity
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 
 class DetalleRecojoActivity : AppCompatActivity() {
@@ -108,14 +112,13 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val tvCardCliente = findViewById<LinearLayout>(R.id.tvCardCliente)
         val tvDetalleScroll: ScrollView = findViewById(R.id.tvDetalleScroll)
 
-
         val btnTelefonoCliente = findViewById<ImageButton>(R.id.btnTelefonoCliente)
         val btnTelefonoProveedor = findViewById<ImageButton>(R.id.btnTelefonoProveedor)
         val btnWhatsappCliente = findViewById<ImageButton>(R.id.btnWhatsappCliente)
         val btnWhatsappProveedor = findViewById<ImageButton>(R.id.btnWhatsappProveedor)
         val frameEditarPedido = findViewById<FrameLayout>(R.id.frameEditarPedido)
-        btnCamara = findViewById<ImageButton>(R.id.btnCamara)
-        btnDinero = findViewById<ImageButton>(R.id.btnDinero)
+        btnCamara = findViewById(R.id.btnCamara)
+        btnDinero = findViewById(R.id.btnDinero)
 
         val btnMapsPedido = findViewById<ImageButton>(R.id.btnMapsCliente)
         val btnMapsRecojo = findViewById<ImageButton>(R.id.btnMapsProveedor)
@@ -134,9 +137,9 @@ class DetalleRecojoActivity : AppCompatActivity() {
         if (SessionManager.rol == "Admin") {
             if(fechaEntregaPedidoMotorizado != null){
                 layout_botones.visibility = GONE
-                frameEditarPedido.visibility = VISIBLE  // Mostrar botón
+                frameEditarPedido.visibility = VISIBLE
             } else {
-                frameEditarPedido.visibility = VISIBLE  // Mostrar botón
+                frameEditarPedido.visibility = VISIBLE
             }
         }
 
@@ -152,7 +155,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
         btnCheck.isEnabled = false  // Deshabilita el botón
         btnCheck.alpha = 0.5f       // Reduce la opacidad al 50%
 
-
         btnCamara.setOnClickListener {
             seSubioEntregaImagen = false
             btnCamara.isEnabled = false
@@ -167,20 +169,15 @@ class DetalleRecojoActivity : AppCompatActivity() {
             abrirCamara()
         }
 
-
-
         btnCheck.setOnClickListener {
             if (item?.fechaRecojoPedidoMotorizado == null && seSubioRecogioImagen) {
-                actualizarEstadoPedido(1)
+                actualizarEstadoPedido(1,"")
             } else if (item?.fechaRecojoPedidoMotorizado != null && seSubioEntregaImagen && seSubioDineroImagen) {
-                actualizarEstadoPedido(2)
+                //actualizarEstadoPedido(2)
+                mostrarDialogoConfirmacion()
             }
         }
 
-
-
-
-        // Inicializamos los textos con los valores del intent
         tvCliente.text = clienteNombre
         tvProveedor.text = proveedorNombre
         tvPrecio.text = "S/ $pedidoCantidadCobrar - $pedidoMetodoPago"
@@ -202,7 +199,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 btnCheck.isEnabled = false  // Deshabilita el botón
                 btnCheck.alpha = 0.5f
                 btnCheck.backgroundTintList = null
-                abrirCamara()
+                abrirGaleria() // Ahora abre la galería en lugar de la cámara
+                //abrirCamara()
             }
             btnDinero.isEnabled = false  // Deshabilita el botón
         }
@@ -239,7 +237,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
                                 .into(imagenEntrega)
                         }
 
-                        // Se actualizan los botones cuando los datos ya están cargados
                         actualizarBotonesLlamada(
                             btnTelefonoCliente, btnTelefonoProveedor,
                             btnWhatsappCliente, btnWhatsappProveedor,
@@ -269,7 +266,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
             this.startActivity(intent)
         }
     }
-
 
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -430,7 +426,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
         }
     }
 
-
     private fun iniciarLlamada(numero: String) {
         val intent = Intent(Intent.ACTION_CALL).apply {
             data = Uri.parse("tel:$numero")
@@ -450,6 +445,24 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private var mainImageUploaded = false
     private var thumbnailUploaded = false
 
+    private fun saveExtractedTextToFirestore(extractedText: String) {
+        val pedidoId = item?.id ?: return
+        val collectionName = "recojos"
+
+        val data = mapOf(
+            "textoExtraido" to extractedText
+        )
+
+        Firebase.firestore.collection(collectionName).document(pedidoId)
+            .update(data)
+            .addOnSuccessListener {
+                Log.d("Firestore", "Texto extraído guardado con éxito")
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error al guardar texto en Firestore: ${e.message}")
+            }
+    }
+
     private fun abrirCamara() {
         try {
             val photoFile = File.createTempFile("IMG_", ".jpg", cacheDir).apply {
@@ -467,6 +480,34 @@ class DetalleRecojoActivity : AppCompatActivity() {
             btnCheck.alpha = 1f       // Reduce la opacidad al 50%
             Log.e("Cámara", "Error al abrir la cámara: ${e.message}")
             Toast.makeText(this, "Error al abrir la cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun analyzeImageWithMLKit(imageUri: Uri) {
+        try {
+            val image: InputImage = InputImage.fromFilePath(this, imageUri)
+
+            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+            recognizer.process(image)
+                .addOnSuccessListener { visionText ->
+                    val extractedText = visionText.text.trim()
+
+                    if (extractedText.isNotEmpty()) {
+                        Log.d("MLKit", "Texto extraído: $extractedText")
+
+                        // Guardar el texto en Firestore
+                        saveExtractedTextToFirestore(extractedText)
+                    } else {
+                        Log.w("MLKit", "No se detectó texto en la imagen")
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("MLKit", "Error al analizar la imagen: ${e.message}")
+                }
+
+        } catch (e: Exception) {
+            Log.e("MLKit", "Error al procesar imagen para OCR: ${e.message}")
         }
     }
 
@@ -492,8 +533,14 @@ class DetalleRecojoActivity : AppCompatActivity() {
                     seSubioDineroImagen = false
                     seDineroImagen = true
                     imagenDinero.setImageURI(photoUri) // Mostrar la imagen capturada
-                    subirFotosFirestore(photoUri!!, 3) // Subir imagen a Firestore
+
+                    // 1. Subir la imagen a Firestore
+                    subirFotosFirestore(photoUri!!, 3)
+
+                    // 2. Extraer texto con ML Kit
+                    // analyzeImageWithMLKit(photoUri!!)
                 }
+
             } catch (e: Exception) {
                 Log.e("Cámara", "Error al procesar la imagen: ${e.message}")
                 Toast.makeText(this, "Error al procesar la imagen", Toast.LENGTH_SHORT).show()
@@ -769,7 +816,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         btnCamara.isEnabled = true
     }
 
-    private fun actualizarEstadoPedido(tipo: Int) {
+    private fun actualizarEstadoPedido(tipo: Int, eleccion: String) {
         val pedidoId = item?.id ?: return
         val fecha = Timestamp.now()
 
@@ -779,15 +826,70 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
         val db = FirebaseFirestore.getInstance()
         db.collection(collectionName).document(pedidoId)
-            .update(campoFecha, fecha)
+            .update(campoFecha, fecha, "quienCobro", eleccion)
             .addOnSuccessListener {
-                Toast.makeText(this, "$tipoOperacion finalizado con éxito.", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this, "$tipoOperacion finalizado con éxito.", Toast.LENGTH_SHORT).show()
                 finish() // Cierra la actividad y vuelve a la anterior
             }
             .addOnFailureListener { e ->
                 Log.e("Firestore", "Error al actualizar la fecha de $tipoOperacion", e)
-                Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this, "Error al actualizar el pedido.", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    // Lanzador para seleccionar una imagen de la galería
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                photoUri = uri
+
+                // Caso de dinero
+                seSubioDineroImagen = false
+                seDineroImagen = true
+                imagenDinero.setImageURI(photoUri) // Mostrar la imagen seleccionada
+
+                // 1. Subir la imagen a Firestore
+                subirFotosFirestore(photoUri!!, 3)
+
+                // 2. Extraer texto con ML Kit
+                analyzeImageWithMLKit(photoUri!!)
+
+            } catch (e: Exception) {
+                Log.e("Galería", "Error al procesar la imagen: ${e.message}")
+                Toast.makeText(this, "Error al procesar la imagen", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Log.d("Galería", "Selección de imagen cancelada")
+        }
+    }
+
+    // Función para abrir la galería
+    private fun abrirGaleria() {
+        galleryLauncher.launch("image/*")
+    }
+
+    private fun mostrarDialogoConfirmacion() {
+        val opciones = arrayOf("Ñanpi", "Proveedor", "Motorizado")
+        var seleccionIndex = -1 // Ninguna opción seleccionada por defecto
+
+        AlertDialog.Builder(this)
+            .setTitle("¿Quién recibió el pago?")
+            .setSingleChoiceItems(opciones, seleccionIndex) { _, which ->
+                seleccionIndex = which // Guardar índice seleccionado
+            }
+            .setPositiveButton("Aceptar") { _, _ ->
+                if (seleccionIndex != -1) {
+                    val seleccion = opciones[seleccionIndex]
+                    actualizarEstadoPedido(2, seleccion) // Ejecutar después de la selección
+                } else {
+                    Toast.makeText(this, "Debes seleccionar una opción", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancelar") { dialog, _ ->
+                dialog.dismiss() // Cierra el diálogo sin hacer nada
+            }
+            .setCancelable(true) // Permite cerrar tocando fuera del diálogo
+            .show()
     }
 
 

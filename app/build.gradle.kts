@@ -73,6 +73,7 @@ dependencies {
     implementation ("com.google.maps.android:android-maps-utils:3.4.0")
     implementation ("com.google.android.material:material:1.12.0")
     implementation ("com.google.android.flexbox:flexbox:3.0.0")
+    implementation ("com.google.mlkit:text-recognition:16.0.0")
 
 
 
