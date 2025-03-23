@@ -19,19 +19,27 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.os.Build
 import android.provider.MediaStore
+import android.view.LayoutInflater
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.moto_version.R
 import com.example.moto_version.cliente.EditClientDistrictActivity
@@ -45,6 +53,8 @@ import java.io.InputStream
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.example.moto_version.SessionManager
 import com.example.moto_version.cliente.OrderFormActivity
+import com.example.moto_version.gimi.PagosAdapter
+import com.example.moto_version.models.PagoRegistro
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -171,10 +181,10 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
         btnCheck.setOnClickListener {
             if (item?.fechaRecojoPedidoMotorizado == null && seSubioRecogioImagen) {
-                actualizarEstadoPedido(1,"")
+                actualizarEstadoPedido(1)
             } else if (item?.fechaRecojoPedidoMotorizado != null && seSubioEntregaImagen && seSubioDineroImagen) {
                 //actualizarEstadoPedido(2)
-                mostrarDialogoConfirmacion()
+                mostrarDialogoConfirmacionPago()
             }
         }
 
@@ -199,8 +209,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 btnCheck.isEnabled = false  // Deshabilita el botón
                 btnCheck.alpha = 0.5f
                 btnCheck.backgroundTintList = null
-                abrirGaleria() // Ahora abre la galería en lugar de la cámara
-                //abrirCamara()
+                //abrirGaleria() // Ahora abre la galería en lugar de la cámara
+                abrirCamara()
             }
             btnDinero.isEnabled = false  // Deshabilita el botón
         }
@@ -816,7 +826,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
         btnCamara.isEnabled = true
     }
 
-    private fun actualizarEstadoPedido(tipo: Int, eleccion: String) {
+    private fun actualizarEstadoPedido(tipo: Int) {
         val pedidoId = item?.id ?: return
         val fecha = Timestamp.now()
 
@@ -826,7 +836,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
         val db = FirebaseFirestore.getInstance()
         db.collection(collectionName).document(pedidoId)
-            .update(campoFecha, fecha, "quienCobro", eleccion)
+            .update(campoFecha, fecha)
             .addOnSuccessListener {
                 //Toast.makeText(this, "$tipoOperacion finalizado con éxito.", Toast.LENGTH_SHORT).show()
                 finish() // Cierra la actividad y vuelve a la anterior
@@ -880,7 +890,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
             .setPositiveButton("Aceptar") { _, _ ->
                 if (seleccionIndex != -1) {
                     val seleccion = opciones[seleccionIndex]
-                    actualizarEstadoPedido(2, seleccion) // Ejecutar después de la selección
+                    actualizarEstadoPedido(2) // Ejecutar después de la selección
                 } else {
                     Toast.makeText(this, "Debes seleccionar una opción", Toast.LENGTH_SHORT).show()
                 }
@@ -892,6 +902,157 @@ class DetalleRecojoActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun mostrarDialogoConfirmacionPago() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialogo_confirmacion_pago, null)
+        val recyclerPagos = dialogView.findViewById<RecyclerView>(R.id.recyclerPagos)
+        val btnAgregarPago = dialogView.findViewById<Button>(R.id.btnAgregarPago)
+        val btnConfirmar = dialogView.findViewById<Button>(R.id.btnConfirmar)
 
+        // Lista para almacenar los pagos registrados
+        val pagosRegistrados = ArrayList<PagoRegistro>()
+        val adapter = PagosAdapter(pagosRegistrados)
+
+        recyclerPagos.layoutManager = LinearLayoutManager(this)
+        recyclerPagos.adapter = adapter
+
+        // Diálogo principal
+        val alertDialog = AlertDialog.Builder(this)
+            .setTitle("Confirmación de Pago")
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // Botón para agregar nuevo pago
+        btnAgregarPago.setOnClickListener {
+            mostrarDialogoAgregarPago { pago ->
+                pagosRegistrados.add(pago)
+                adapter.notifyItemInserted(pagosRegistrados.size - 1)
+            }
+        }
+
+        // Botón para confirmar todos los pagos
+        btnConfirmar.setOnClickListener {
+            if (pagosRegistrados.isEmpty()) {
+                Toast.makeText(this, "Debes agregar al menos un pago", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Verificar si el total de los pagos coincide con el monto del pedido
+            val totalPagado = pagosRegistrados.sumOf { it.monto }
+            val montoPedido = item?.pedidoCantidadCobrar?.toDoubleOrNull() ?: 0.0
+
+            if (totalPagado == montoPedido) {
+                guardarPagosYActualizar(pagosRegistrados)
+                alertDialog.dismiss()
+            } else {
+                // Mostrar advertencia y evitar continuar
+                AlertDialog.Builder(this)
+                    .setTitle("Error")
+                    .setMessage("El monto total pagado (S/ $totalPagado) no coincide con el valor del pedido (S/ $montoPedido).")
+                    .setPositiveButton("Aceptar", null)
+                    .show()
+            }
+
+        }
+
+        // Botón para cancelar
+        dialogView.findViewById<Button>(R.id.btnCancelar).setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
+    }
+
+    private fun mostrarDialogoAgregarPago(callback: (PagoRegistro) -> Unit) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialogo_agregar_pago, null)
+
+        val spinnerMetodo = dialogView.findViewById<Spinner>(R.id.spinnerMetodoPago)
+        val spinnerReceptor = dialogView.findViewById<Spinner>(R.id.spinnerReceptor)
+        val editMonto = dialogView.findViewById<EditText>(R.id.editMonto)
+
+        // Configurar spinner de métodos de pago
+        val metodosPago = arrayOf("Efectivo", "Yape", "Plin", "Transferencia")
+        val adapterMetodos = ArrayAdapter(this, android.R.layout.simple_spinner_item, metodosPago)
+        adapterMetodos.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerMetodo.adapter = adapterMetodos
+
+        // Configurar spinner de receptores
+        val receptores = arrayOf("Ñanpi", "Proveedor", "Motorizado")
+        val adapterReceptores = ArrayAdapter(this, android.R.layout.simple_spinner_item, receptores)
+        adapterReceptores.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerReceptor.adapter = adapterReceptores
+
+        // Configurar listeners para mostrar/ocultar campos según el método de pago
+        spinnerMetodo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val metodo = metodosPago[position]
+                // Si es efectivo, el receptor debería ser solo el motorizado
+                if (metodo == "Efectivo") {
+                    spinnerReceptor.setSelection(receptores.indexOf("Motorizado"))
+                    spinnerReceptor.isEnabled = false
+                } else {
+                    // Para métodos digitales, excluir motorizado como opción predeterminada
+                    if (spinnerReceptor.selectedItemPosition == receptores.indexOf("Motorizado")) {
+                        spinnerReceptor.setSelection(0) // Seleccionar Ñanpi por defecto
+                    }
+                    spinnerReceptor.isEnabled = true
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Agregar Pago")
+            .setView(dialogView)
+            .setPositiveButton("Agregar") { _, _ ->
+                val monto = editMonto.text.toString().toDoubleOrNull() ?: 0.0
+                if (monto <= 0) {
+                    Toast.makeText(this, "El monto debe ser mayor a 0", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val metodoPago = spinnerMetodo.selectedItem.toString()
+                val receptor = spinnerReceptor.selectedItem.toString()
+                val ruta = SessionManager.ruta ?: ""
+                val resultado = receptor + "," + ruta
+
+                callback(PagoRegistro(metodoPago, resultado, monto))
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun guardarPagosYActualizar(pagos: List<PagoRegistro>) {
+        val pedidoId = item?.id ?: return
+        val fecha = Timestamp.now()
+
+        val db = FirebaseFirestore.getInstance()
+        val docRef = db.collection("recojos").document(pedidoId)
+
+        // Preparar los datos para Firestore
+        val pagosMap = pagos.mapIndexed { index, pago ->
+            mapOf(
+                "metodoPago" to pago.metodoPago,
+                "receptor" to pago.receptor,
+                "monto" to pago.monto
+            )
+        }
+
+        val updates = hashMapOf<String, Any>(
+            "fechaEntregaPedidoMotorizado" to fecha,
+            "pagosRegistrados" to pagosMap
+        )
+
+        docRef.update(updates)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Pagos registrados correctamente", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error al actualizar los pagos", e)
+                Toast.makeText(this, "Error al registrar los pagos", Toast.LENGTH_SHORT).show()
+            }
+    }
 
 }
