@@ -961,34 +961,20 @@ class OrderFormActivity : AppCompatActivity() {
                 "Ventanilla (Callao)", "Mi Perú (Callao)", "Oquendo (Callao)"
             ),
             "sur" to listOf(
-                "Chorrillos (Lima)", "Lurín (Lima)", "San Juan de Miraflores (Lima)",
-                "Surco (Lima)", "Surquillo (Lima)",
-                "Villa El Salvador (Lima)", "Villa María del Triunfo (Lima)"
+                "San Borja (Lima)", "Barranco (Lima)", "Chorrillos (Lima)", "Lurín (Lima)",
+                "San Juan de Miraflores (Lima)", "Surco (Lima)",
+                "Surquillo (Lima)", "Villa El Salvador (Lima)", "Villa María del Triunfo (Lima)"
             ),
             "este" to listOf(
-                "Ate (Lima)", "Chaclacayo (Lima)", "El Agustino (Lima)", "Huachipa (Ate, Lima)",
+                "La Molina (Lima)", "Ate (Lima)", "Chaclacayo (Lima)", "Huachipa (Ate, Lima)",
                 "San Juan de Lurigancho (Lima)", "Santa Anita (Lima)", "Santa Clara (Ate, Lima)"
             ),
             "oeste" to listOf(
-                "Bellavista (Callao)", "Callao (Callao)", "Carmen de la Legua (Callao)",
+                "Magdalena del Mar (Lima)", "Lince (Lima)", "Pueblo Libre (Lima)", "Bellavista (Callao)",
+                "San Miguel (Lima)", "Callao (Callao)", "Carmen de la Legua (Callao)",
                 "La Perla (Callao)", "La Punta (Callao)"
             ),
-            "centro" to listOf(
-                "Barranco (Lima)",
-                "Breña (Lima)",
-                "Cercado de Lima (Lima)",
-                "Jesús María (Lima)",
-                "La Molina (Lima)",
-                "La Victoria (Lima)",
-                "Lince (Lima)",
-                "Magdalena del Mar (Lima)",
-                "Pueblo Libre (Lima)",
-                "Rímac (Lima)",
-                "San Borja (Lima)",
-                "San Isidro (Lima)",
-                "San Luis (Lima)",
-                "San Miguel (Lima)"
-            )
+            "sjl" to listOf("San Juan de Lurigancho (Lima)")
         )
 
         for ((grupo, distritos) in grupos) {
