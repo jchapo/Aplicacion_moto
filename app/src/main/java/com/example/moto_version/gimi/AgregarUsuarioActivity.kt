@@ -14,6 +14,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.functions.FirebaseFunctions
 import java.util.Locale
 
 class AgregarUsuarioActivity : AppCompatActivity() {
@@ -26,6 +27,7 @@ class AgregarUsuarioActivity : AppCompatActivity() {
     private var progressBar: ProgressBar? = null
     private var db: FirebaseFirestore? = null
     private var auth: FirebaseAuth? = null
+    private var functions: FirebaseFunctions? = null // Nueva instancia de Functions
     private var userId: String? = null
     private var tipoUsuario: String? = null // "Proveedor" o "Motorizado"
 
@@ -39,6 +41,7 @@ class AgregarUsuarioActivity : AppCompatActivity() {
 
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
+        functions = FirebaseFunctions.getInstance() // Inicializar Functions
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -133,61 +136,55 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         val nombre = capitalizeFirstLetter(etNombre!!.text.toString().trim())
         val apellido = capitalizeFirstLetter(etApellido!!.text.toString().trim())
         val email = etEmail!!.text.toString().trim().lowercase(Locale.getDefault())
-        val nombreEmpresa = etNombreEmpresa!!.text.toString().trim().uppercase(Locale.getDefault())
+        val nombreEmpresa = if (tipoUsuario == "Proveedor") {
+            etNombreEmpresa!!.text.toString().trim().uppercase(Locale.getDefault())
+        } else {
+            "TRABAJADOR_NANPI_COURIER"
+        }
         val phone = etPhone!!.text.toString().trim()
 
         if (userId == null) {
-            // Nuevo usuario - crear en Firebase Auth primero
-            crearUsuarioFirebaseAuth(nombre, apellido, email, nombreEmpresa, phone)
+            // Nuevo usuario - usar Firebase Function
+            crearUsuarioConFunction(nombre, apellido, email, nombreEmpresa, phone)
         } else {
             // Actualizar usuario existente
             actualizarUsuarioExistente(userId!!, nombre, apellido, email, nombreEmpresa, phone)
         }
     }
 
-    private fun crearUsuarioFirebaseAuth(nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String) {
-        // Generar contraseña temporal o usar una por defecto
-        val passwordTemporal = "TempPass123!" // Podrías generar una más segura
+    private fun crearUsuarioConFunction(nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String) {
+        // Generar contraseña temporal
+        val passwordTemporal = generarPasswordTemporal()
 
-        auth!!.createUserWithEmailAndPassword(email, passwordTemporal)
-            .addOnSuccessListener { authResult ->
-                val uid = authResult.user?.uid
-                if (uid != null) {
-                    // Usuario creado en Auth, ahora crear en Firestore usando el UID
-                    crearUsuarioFirestore(uid, nombre, apellido, email, nombreEmpresa, phone)
-                } else {
-                    mostrarError("Error obteniendo UID del usuario")
-                }
-            }
-            .addOnFailureListener { exception ->
-                mostrarError("Error creando usuario en Auth: ${exception.message}")
-            }
-    }
-
-    private fun crearUsuarioFirestore(uid: String, nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String) {
-        val usuario = Usuario(
-            nombre,
-            apellido,
-            email,
-            if (tipoUsuario == "Proveedor") nombreEmpresa else "TRABAJADOR_NANPI_COURIER",
-            phone,
-            tipoUsuario,
-            if (tipoUsuario == "Proveedor") "" else nombre
+        // Crear el mapa de datos para enviar a la función
+        val data = hashMapOf(
+            "email" to email,
+            "password" to passwordTemporal,
+            "nombre" to nombre,
+            "apellido" to apellido,
+            "phone" to phone,
+            "nombreEmpresa" to nombreEmpresa,
+            "rol" to tipoUsuario
         )
 
-        // AQUÍ ES EL CAMBIO CLAVE: usar uid como ID del documento
-        db!!.collection("usuarios")
-            .document(uid) // Usar UID en lugar de phone
-            .set(usuario)
-            .addOnSuccessListener {
+        // Llamar a la función
+        functions!!.getHttpsCallable("createUserWithRole")
+            .call(data)
+            .addOnSuccessListener { result ->
+                // La función se ejecutó correctamente
+                val resultData = result.data as? Map<String, Any>
+                val message = resultData?.get("message") as? String ?: "Usuario creado correctamente"
+                val uid = resultData?.get("uid") as? String
+
                 Toast.makeText(this, "$tipoUsuario agregado con éxito", Toast.LENGTH_SHORT).show()
+
+                // Opcional: Mostrar información de la contraseña temporal al administrador
+                mostrarInfoPasswordTemporal(email, passwordTemporal)
+
                 finish()
             }
             .addOnFailureListener { exception ->
-                // Si falla Firestore, eliminar el usuario de Auth para mantener consistencia
-                auth!!.currentUser?.delete()
-                mostrarError("Error guardando en base de datos: ${exception.message}")
-                exception.printStackTrace()
+                mostrarError("Error creando usuario: ${exception.message}")
             }
     }
 
@@ -196,7 +193,7 @@ class AgregarUsuarioActivity : AppCompatActivity() {
             nombre,
             apellido,
             email,
-            if (tipoUsuario == "Proveedor") nombreEmpresa else "TRABAJADOR_NANPI_COURIER",
+            nombreEmpresa,
             phone,
             tipoUsuario,
             if (tipoUsuario == "Proveedor") "" else nombre
@@ -238,5 +235,25 @@ class AgregarUsuarioActivity : AppCompatActivity() {
 
     private fun capitalizeFirstLetter(text: String): String {
         return text.lowercase(Locale.getDefault()).replaceFirstChar { it.uppercase() }
+    }
+
+    private fun generarPasswordTemporal(): String {
+        // Genera una contraseña temporal segura
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%"
+        return (1..12)
+            .map { chars.random() }
+            .joinToString("")
+    }
+
+    private fun mostrarInfoPasswordTemporal(email: String, password: String) {
+        // Aquí puedes mostrar la información de la contraseña temporal
+        // Por ejemplo, en un dialog o enviarlo por otro medio al usuario
+        Toast.makeText(
+            this,
+            "Usuario creado. Email: $email\nContraseña temporal: $password",
+            Toast.LENGTH_LONG
+        ).show()
+
+        // También podrías copiar al portapapeles o enviar por email/SMS
     }
 }

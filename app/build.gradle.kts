@@ -78,6 +78,6 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("jp.wasabeef:glide-transformations:4.3.0")
-
+    implementation("com.google.firebase:firebase-functions:20.4.0")
 
 }
