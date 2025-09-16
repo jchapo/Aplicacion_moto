@@ -23,6 +23,7 @@ class AgregarUsuarioActivity : AppCompatActivity() {
     private var etEmail: TextInputEditText? = null
     private var etNombreEmpresa: TextInputEditText? = null
     private var etPhone: TextInputEditText? = null
+    private var etRuta: TextInputEditText? = null // Agregar después de etPhone
     private lateinit var btnGuardar: Button
     private var progressBar: ProgressBar? = null
     private var db: FirebaseFirestore? = null
@@ -54,11 +55,15 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         etEmail = findViewById(R.id.etEmail)
         etNombreEmpresa = findViewById(R.id.etNombreEmpresa)
 
-        if (tipoUsuario == "Motorizado") {
+        if (tipoUsuario == "Motorizado" || tipoUsuario == "Administrador") {
             etNombreEmpresa?.visibility = View.GONE
         }
 
         etPhone = findViewById(R.id.etPhone)
+        etRuta = findViewById(R.id.etRuta)
+        if (tipoUsuario != "Motorizado") {
+            etRuta?.visibility = View.GONE
+        }
         btnGuardar = findViewById(R.id.btnAgregarUsuario)
         btnGuardar.text = if (userId.isNullOrEmpty()) "Guardar $tipoUsuario" else "Actualizar $tipoUsuario"
         progressBar = findViewById(R.id.progressBarAgregar)
@@ -97,6 +102,7 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         etEmail?.addTextChangedListener(textWatcher)
         etNombreEmpresa?.addTextChangedListener(textWatcher)
         etPhone?.addTextChangedListener(textWatcher)
+        etRuta?.addTextChangedListener(textWatcher) // Agregar después de etPhone
 
         // Formateo del número de teléfono
         etPhone?.addTextChangedListener(object : TextWatcher {
@@ -119,11 +125,13 @@ class AgregarUsuarioActivity : AppCompatActivity() {
 
     private fun validarCampos() {
         val esProveedor = tipoUsuario == "Proveedor"
+        val esMotorizado = tipoUsuario == "Motorizado"
         val todosLosCamposLlenos =
             (!etNombre!!.text.isNullOrBlank() &&
                     !etApellido!!.text.isNullOrBlank() &&
                     !etEmail!!.text.isNullOrBlank() &&
                     (!esProveedor || !etNombreEmpresa!!.text.isNullOrBlank()) &&
+                    (!esMotorizado || !etRuta!!.text.isNullOrBlank()) &&
                     !etPhone!!.text.isNullOrBlank() && etPhone!!.text!!.length == 9)
 
         btnGuardar.isEnabled = todosLosCamposLlenos
@@ -136,67 +144,140 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         val nombre = capitalizeFirstLetter(etNombre!!.text.toString().trim())
         val apellido = capitalizeFirstLetter(etApellido!!.text.toString().trim())
         val email = etEmail!!.text.toString().trim().lowercase(Locale.getDefault())
-        val nombreEmpresa = if (tipoUsuario == "Proveedor") {
-            etNombreEmpresa!!.text.toString().trim().uppercase(Locale.getDefault())
-        } else {
-            "TRABAJADOR_NANPI_COURIER"
+        val nombreEmpresa = when (tipoUsuario) {
+            "Proveedor" -> etNombreEmpresa!!.text.toString().trim().uppercase(Locale.getDefault())
+            "Motorizado" -> "TRABAJADOR_NANPI_COURIER"
+            "Administrador" -> "ADMIN_NANPI_COURIER"
+            else -> "TRABAJADOR_NANPI_COURIER" // Fallback por defecto
         }
         val phone = etPhone!!.text.toString().trim()
+        val ruta = if (tipoUsuario == "Motorizado") {
+            etRuta!!.text.toString().trim().uppercase(Locale.getDefault())
+        } else {
+            "" // Vacío para otros tipos de usuario
+        }
 
         if (userId == null) {
             // Nuevo usuario - usar Firebase Function
-            crearUsuarioConFunction(nombre, apellido, email, nombreEmpresa, phone)
+            crearUsuarioConFunction(nombre, apellido, email, nombreEmpresa, phone,ruta)
         } else {
             // Actualizar usuario existente
-            actualizarUsuarioExistente(userId!!, nombre, apellido, email, nombreEmpresa, phone)
+            actualizarUsuarioExistente(userId!!, nombre, apellido, email, nombreEmpresa, phone, ruta)
         }
     }
 
-    private fun crearUsuarioConFunction(nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String) {
+    private fun crearUsuarioConFunction(nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String, ruta: String) {
         // Generar contraseña temporal
         val passwordTemporal = generarPasswordTemporal()
 
         // Crear el mapa de datos para enviar a la función
-        val data = hashMapOf(
+        val data = mutableMapOf<String, Any>(
             "email" to email,
             "password" to passwordTemporal,
             "nombre" to nombre,
             "apellido" to apellido,
             "phone" to phone,
             "nombreEmpresa" to nombreEmpresa,
-            "rol" to tipoUsuario
+            "rol" to (tipoUsuario ?: "")
         )
 
-        // Llamar a la función
-        functions!!.getHttpsCallable("createUserWithRole")
-            .call(data)
+        // Solo agregar ruta si es Motorizado y no está vacía
+        if (tipoUsuario == "Motorizado") {
+            data["ruta"] = ruta
+        } else {
+            data["ruta"] = "" // Enviar vacío para otros roles
+        }
+
+        // Debug: Imprimir los datos que se envían
+        println("Datos enviados a la función:")
+        data.forEach { (key, value) ->
+            println("  $key: '$value' (${value.javaClass.simpleName})")
+            if (value.toString().isBlank() && key != "ruta") {
+                println("  ⚠️ Campo vacío detectado: $key")
+            }
+        }
+
+        // Verificar conexión a Firebase Functions
+        if (functions == null) {
+            println("❌ Firebase Functions no inicializado")
+            mostrarError("Error de configuración de Firebase")
+            return
+        }
+
+        // Llamar a la función con timeout aumentado
+        val callable = functions!!.getHttpsCallable("createUserWithRole")
+        callable.setTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        callable.call(data)
             .addOnSuccessListener { result ->
-                // La función se ejecutó correctamente
-                val resultData = result.data as? Map<String, Any>
+                println("✅ Función ejecutada correctamente")
+                val resultData = result.getData() as? Map<String, Any>
+                println("Respuesta de la función: $resultData")
+
                 val message = resultData?.get("message") as? String ?: "Usuario creado correctamente"
                 val uid = resultData?.get("uid") as? String
+                val success = resultData?.get("success") as? Boolean ?: true
 
-                Toast.makeText(this, "$tipoUsuario agregado con éxito", Toast.LENGTH_SHORT).show()
-
-                // Opcional: Mostrar información de la contraseña temporal al administrador
-                mostrarInfoPasswordTemporal(email, passwordTemporal)
-
-                finish()
+                if (success) {
+                    Toast.makeText(this, "$tipoUsuario agregado con éxito", Toast.LENGTH_SHORT).show()
+                    // Opcional: Mostrar información de la contraseña temporal al administrador
+                    mostrarInfoPasswordTemporal(email, passwordTemporal)
+                    finish()
+                } else {
+                    mostrarError("Error: $message")
+                }
             }
             .addOnFailureListener { exception ->
-                mostrarError("Error creando usuario: ${exception.message}")
-            }
-    }
+                println("❌ Error completo: ${exception.message}")
+                println("❌ Tipo de excepción: ${exception.javaClass.simpleName}")
 
-    private fun actualizarUsuarioExistente(userId: String, nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String) {
+                // Mostrar más detalles del error
+                when (exception) {
+                    is com.google.firebase.functions.FirebaseFunctionsException -> {
+                        val code = exception.code
+                        val details = exception.details
+                        println("❌ Código de error Firebase: $code")
+                        println("❌ Detalles Firebase: $details")
+
+                        // Mensajes de error más específicos
+                        val errorMessage = when (code) {
+                            com.google.firebase.functions.FirebaseFunctionsException.Code.INVALID_ARGUMENT -> {
+                                "Datos inválidos: ${exception.message}"
+                            }
+                            com.google.firebase.functions.FirebaseFunctionsException.Code.UNAUTHENTICATED -> {
+                                "Error de autenticación. Por favor, inicia sesión nuevamente."
+                            }
+                            com.google.firebase.functions.FirebaseFunctionsException.Code.PERMISSION_DENIED -> {
+                                "No tienes permisos para realizar esta acción."
+                            }
+                            com.google.firebase.functions.FirebaseFunctionsException.Code.INTERNAL -> {
+                                "Error interno del servidor. Intenta nuevamente."
+                            }
+                            com.google.firebase.functions.FirebaseFunctionsException.Code.UNAVAILABLE -> {
+                                "Servicio no disponible. Verifica tu conexión."
+                            }
+                            else -> {
+                                "Error: ${exception.message}"
+                            }
+                        }
+                        mostrarError(errorMessage)
+                    }
+                    is java.net.ConnectException, is java.net.SocketTimeoutException -> {
+                        mostrarError("Error de conexión. Verifica tu internet y vuelve a intentar.")
+                    }
+                    else -> {
+                        mostrarError("Error inesperado: ${exception.message}")
+                    }
+                }
+            }
+    }    private fun actualizarUsuarioExistente(userId: String, nombre: String, apellido: String, email: String, nombreEmpresa: String, phone: String, ruta: String) {
         val usuario = Usuario(
             nombre,
             apellido,
             email,
-            nombreEmpresa,
+            nombreEmpresa, // Ya viene procesado desde guardarUsuario()
             phone,
             tipoUsuario,
-            if (tipoUsuario == "Proveedor") "" else nombre
+            ruta
         )
 
         db!!.collection("usuarios").document(userId)
@@ -220,6 +301,8 @@ class AgregarUsuarioActivity : AppCompatActivity() {
                     etEmail?.setText(document.getString("email"))
                     etNombreEmpresa?.setText(document.getString("nombreEmpresa"))
                     etPhone?.setText(document.getString("phone"))
+                    etRuta?.setText(document.getString("ruta"))
+
                 }
             }
             .addOnFailureListener {
