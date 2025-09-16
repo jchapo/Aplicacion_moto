@@ -75,6 +75,7 @@
             android:name=".gimi.GimiMainActivity1"
             android:exported="true" />
 
+
     </application>
 
 </manifest>

@@ -32,7 +32,7 @@ class LoginActivity : AppCompatActivity() {
         if (auth.currentUser != null) {
             val email = auth.currentUser?.email
             if (email != null) {
-                obtenerRolDeFirestore(email)  // Verifica el rol y redirige a MainActivity si es necesario
+                obtenerRolDeFirestore()  // Verifica el rol y redirige a MainActivity si es necesario
             }
             return
         }
@@ -88,7 +88,7 @@ class LoginActivity : AppCompatActivity() {
                         .addOnCompleteListener(this) { task ->
                             if (task.isSuccessful) {
                                 val user = auth.currentUser
-                                user?.email?.let { obtenerRolDeFirestore(it) }
+                                user?.email?.let { obtenerRolDeFirestore() }
                             } else {
                                 Toast.makeText(this, "Error en autenticación", Toast.LENGTH_SHORT)
                                     .show()
@@ -110,55 +110,31 @@ class LoginActivity : AppCompatActivity() {
         findViewById<SignInButton>(R.id.btnGoogleSignIn).isEnabled = true
     }
 
-    private fun obtenerRolDeFirestore(email: String) {
-        db.collection("usuarios")
-            .whereEqualTo("email", email).get()
-            .addOnSuccessListener { documents ->
-                if (!documents.isEmpty) {
-                    val document = documents.documents[0]
+    private fun obtenerRolDeFirestore() {
+        val uid = auth.currentUser?.uid ?: return
 
-                    // Guardar datos en el Singleton
+        db.collection("usuarios").document(uid).get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
                     SessionManager.rol = document.getString("rol") ?: ""
                     SessionManager.ruta = document.getString("ruta") ?: ""
                     SessionManager.nombre = document.getString("nombre") ?: ""
                     SessionManager.phone = document.getString("phone") ?: ""
                     SessionManager.nombreEmpresa = document.getString("nombreEmpresa") ?: ""
 
-                    // Mensaje de bienvenida
-                    Toast.makeText(this, "Bienvenido ${SessionManager.nombre}", Toast.LENGTH_LONG).show()
-
-                    // Redirigir a la actividad correspondiente
                     when (SessionManager.rol) {
-                        "Motorizado" -> {
-                            val intent = Intent(this, MainActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                            finish()
-                        }
-                        "Proveedor" -> {
-                            val intent = Intent(this, ClienteMainActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                            finish()
-                        }
-                        "Admin" -> {
-                            val intent = Intent(this, GimiMainActivity1::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                            finish()
-                        }
-                        else -> {
-                            Toast.makeText(this, "Hubo un error", Toast.LENGTH_LONG).show()
-                            auth.signOut()  // Cerrar sesión en caso de error
-                        }
+                        "Motorizado" -> startActivity(Intent(this, MainActivity::class.java))
+                        "Proveedor" -> startActivity(Intent(this, ClienteMainActivity::class.java))
+                        "Admin" -> startActivity(Intent(this, GimiMainActivity1::class.java))
                     }
-
+                    finish()
                 }
             }
-            .addOnFailureListener { exception ->
-                Log.e("Firestore", "Error obteniendo rol", exception)
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error obteniendo rol", e)
             }
     }
+
 
 
 

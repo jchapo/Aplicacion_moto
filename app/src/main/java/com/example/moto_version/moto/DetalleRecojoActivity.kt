@@ -20,6 +20,8 @@ import android.graphics.Matrix
 import android.os.Build
 import android.provider.MediaStore
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
@@ -55,6 +57,9 @@ import com.example.moto_version.SessionManager
 import com.example.moto_version.cliente.OrderFormActivity
 import com.example.moto_version.gimi.PagosAdapter
 import com.example.moto_version.models.PagoRegistro
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -64,18 +69,18 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
     private lateinit var db: FirebaseFirestore
     private var item: Item? = null  // Variable global
-    private lateinit var btnCamara: ImageButton
-    private lateinit var btnDinero: ImageButton
-    private lateinit var btnCheck: ImageButton
-    private lateinit var btnEditarCliente: ImageButton
-    private lateinit var btnEditarPedido: ImageButton
+    private lateinit var btnCamara: MaterialButton
+    private lateinit var btnDinero: MaterialButton
+    private lateinit var btnCheck: MaterialButton
+    private lateinit var btnEditarCliente: MaterialButton
+    private lateinit var btnEditarPedido: MaterialButton
     private lateinit var imagenRecojo: ImageView
     private lateinit var imagenEntrega: ImageView
     private lateinit var imagenDinero: ImageView
     private lateinit var linearLayoutContacto: LinearLayout
     private lateinit var layout_botones: LinearLayout
     private lateinit var cardDinero: CardView
-    private lateinit var tvCardProveedor: LinearLayout
+    private lateinit var tvCardProveedor: MaterialCardView
     private var seRecogioImagen: Boolean = false
     private var seEntregoImagen: Boolean = false
     private var seDineroImagen: Boolean = false
@@ -89,9 +94,61 @@ class DetalleRecojoActivity : AppCompatActivity() {
         private const val REQUEST_CAMERA_PERMISSION = 100
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.detail_menu, menu)
+
+        // Añadir logs de depuración
+
+        // Configurar visibilidad del menú de edición basado en rol
+        menu?.let {
+            val editMenuItem = it.findItem(R.id.action_edit_order)
+
+            // Verificar rol de admin
+            val isAdmin = SessionManager.rol?.trim()?.equals("Admin", ignoreCase = true) == true
+
+
+            // Establecer visibilidad del ítem
+            editMenuItem?.isVisible = isAdmin
+        }
+
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
+        return when (item.itemId) {
+            R.id.action_edit_order -> {
+
+                try {
+                    val intent = Intent(this, OrderFormActivity::class.java)
+                    intent.putExtra("orderId", orderId)
+                    intent.putExtra("isEditMode", true)
+
+                    startActivity(intent)
+
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Error al abrir edición: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+
+                true
+            }
+            else -> {
+                super.onOptionsItemSelected(item)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalle_recojo)
+
+        // Configurar la Toolbar
+        val toolbar: MaterialToolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        // Habilitar botón de retroceso
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
 
         val id = intent.getStringExtra("id") ?: ""
         orderId = id
@@ -119,46 +176,28 @@ class DetalleRecojoActivity : AppCompatActivity() {
         val tvCliente = findViewById<TextView>(R.id.tvDetalleCliente)
         val tvProveedor = findViewById<TextView>(R.id.tvDetalleProveedor)
         val tvPrecio = findViewById<TextView>(R.id.tvDetallePrecio)
-        val tvCardCliente = findViewById<LinearLayout>(R.id.tvCardCliente)
-        val tvDetalleScroll: ScrollView = findViewById(R.id.tvDetalleScroll)
+        val tvCardCliente = findViewById<MaterialCardView>(R.id.tvCardCliente)
 
-        val btnTelefonoCliente = findViewById<ImageButton>(R.id.btnTelefonoCliente)
-        val btnTelefonoProveedor = findViewById<ImageButton>(R.id.btnTelefonoProveedor)
-        val btnWhatsappCliente = findViewById<ImageButton>(R.id.btnWhatsappCliente)
-        val btnWhatsappProveedor = findViewById<ImageButton>(R.id.btnWhatsappProveedor)
-        val frameEditarPedido = findViewById<FrameLayout>(R.id.frameEditarPedido)
+        val btnTelefonoCliente = findViewById<MaterialButton>(R.id.btnTelefonoCliente)
+        val btnTelefonoProveedor = findViewById<MaterialButton>(R.id.btnTelefonoProveedor)
+        val btnWhatsappCliente = findViewById<MaterialButton>(R.id.btnWhatsappCliente)
+        val btnWhatsappProveedor = findViewById<MaterialButton>(R.id.btnWhatsappProveedor)
+        val frameEditarPedido = findViewById<LinearLayout>(R.id.frameEditarPedido)
         btnCamara = findViewById(R.id.btnCamara)
         btnDinero = findViewById(R.id.btnDinero)
 
-        val btnMapsPedido = findViewById<ImageButton>(R.id.btnMapsCliente)
-        val btnMapsRecojo = findViewById<ImageButton>(R.id.btnMapsProveedor)
+        val btnMapsPedido = findViewById<MaterialButton>(R.id.btnMapsCliente)
+        val btnMapsRecojo = findViewById<MaterialButton>(R.id.btnMapsProveedor)
 
         imagenRecojo = findViewById(R.id.imagenRecojo)
         imagenEntrega = findViewById(R.id.imagenEntrega)
         imagenDinero = findViewById(R.id.imagenDinero)
         btnCheck = findViewById(R.id.btnCheck)
         btnEditarCliente = findViewById(R.id.btnEditarCliente)
-        btnEditarPedido = findViewById(R.id.btnEditarPedido)
         linearLayoutContacto = findViewById(R.id.linearLayoutContacto)
         cardDinero = findViewById(R.id.cardDinero)
         tvCardProveedor = findViewById(R.id.tvCardProveedor)
         layout_botones = findViewById(R.id.layout_botones)
-
-        if (SessionManager.rol == "Admin") {
-            if(fechaEntregaPedidoMotorizado != null){
-                layout_botones.visibility = GONE
-                frameEditarPedido.visibility = VISIBLE
-            } else {
-                frameEditarPedido.visibility = VISIBLE
-            }
-        }
-
-        btnEditarPedido.setOnClickListener {
-            val intent = Intent(this, OrderFormActivity::class.java)
-            intent.putExtra("orderId", orderId) // orderId es el ID del pedido que se desea editar
-            intent.putExtra("isEditMode", true) // Pasar el extra como booleano
-            this.startActivity(intent)
-        }
 
         val color = ContextCompat.getColorStateList(this, android.R.color.holo_orange_light)
         btnCamara.backgroundTintList = color
@@ -254,8 +293,6 @@ class DetalleRecojoActivity : AppCompatActivity() {
                         )
                     }
 
-
-
                 } else {
                     Log.e("Firestore", "No se encontró el documento")
                 }
@@ -314,9 +351,9 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
 
     private fun actualizarBotonesLlamada(
-        btnCliente: ImageButton, btnProveedor: ImageButton,
-        btnWhatsappCliente: ImageButton, btnWhatsappProveedor: ImageButton,
-        btnMapsPedido: ImageButton, btnMapsRecojo: ImageButton,
+        btnCliente: MaterialButton, btnProveedor: MaterialButton,
+        btnWhatsappCliente: MaterialButton, btnWhatsappProveedor: MaterialButton,
+        btnMapsPedido: MaterialButton, btnMapsRecojo: MaterialButton,
         item: Item
     ) {
         val clienteTelefono = item.clienteTelefono ?: ""
@@ -349,8 +386,8 @@ class DetalleRecojoActivity : AppCompatActivity() {
         }
 
         // Agregar aquí los botones de Waze
-        val btnWazeCliente = findViewById<ImageButton>(R.id.btnWazeCliente)
-        val btnWazeProveedor = findViewById<ImageButton>(R.id.btnWazeProveedor)
+        val btnWazeCliente = findViewById<MaterialButton>(R.id.btnWazeCliente)
+        val btnWazeProveedor = findViewById<MaterialButton>(R.id.btnWazeProveedor)
 
         btnWazeCliente.setOnClickListener {
             Log.d("Waze", "Iniciando navegación a pedido: ($pedidoLat, $pedidoLong)")
@@ -554,12 +591,12 @@ class DetalleRecojoActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("Cámara", "Error al procesar la imagen: ${e.message}")
                 Toast.makeText(this, "Error al procesar la imagen", Toast.LENGTH_SHORT).show()
-                btnCamara.setImageResource(R.drawable.camera_solid)
+                btnCamara.setIconResource(R.drawable.camera_solid)
                 btnCamara.isEnabled = true
             }
         } else {
             Log.d("Cámara", "Operación cancelada o fallida: ${result.resultCode}")
-            btnCamara.setImageResource(R.drawable.camera_solid)
+            btnCamara.setIconResource(R.drawable.camera_solid)
             btnCamara.isEnabled = true
         }
     }
@@ -698,13 +735,13 @@ class DetalleRecojoActivity : AppCompatActivity() {
     private fun subirFotosFirestore(imageUri: Uri, tipo: Int) {
         var tipoOperacion = ""
         if (tipo == 1){
-            btnCamara.setImageResource(R.drawable.loading_animation)
+            btnCamara.setIconResource(R.drawable.loading_animation)
             tipoOperacion = "Recojo"
         } else if (tipo == 2){
-            btnCamara.setImageResource(R.drawable.loading_animation)
+            btnCamara.setIconResource(R.drawable.loading_animation)
             tipoOperacion = "Entrega"
         } else {
-            btnDinero.setImageResource(R.drawable.loading_animation)
+            btnDinero.setIconResource(R.drawable.loading_animation)
             tipoOperacion = "Dinero"
         }
 
@@ -774,7 +811,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 1 -> {
                     Log.d("checkAllUploadsCompleted", "Caso 1: Recojo")
                     seSubioRecogioImagen = true
-                    btnCamara.setImageResource(R.drawable.camera_solid)
+                    btnCamara.setIconResource(R.drawable.camera_solid)
                     btnCamara.backgroundTintList = null
                     btnCamara.isEnabled = true
 
@@ -786,7 +823,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 2 -> {
                     Log.d("checkAllUploadsCompleted", "Caso 2: Entrega")
                     seSubioEntregaImagen = true
-                    btnCamara.setImageResource(R.drawable.camera_solid)
+                    btnCamara.setIconResource(R.drawable.camera_solid)
                     btnCamara.backgroundTintList = null
                     btnCamara.isEnabled = true
 
@@ -802,7 +839,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
                 else -> {
                     Log.d("checkAllUploadsCompleted", "Caso 3: Dinero")
                     seSubioDineroImagen = true
-                    btnDinero.setImageResource(R.drawable.money_bill_wave_solid)
+                    btnDinero.setIconResource(R.drawable.money_bill_wave_solid)
                     btnDinero.backgroundTintList = null
                     btnDinero.isEnabled = true
 
@@ -822,7 +859,7 @@ class DetalleRecojoActivity : AppCompatActivity() {
 
     private fun mostrarErrorYReiniciar() {
         Toast.makeText(this, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
-        btnCamara.setImageResource(R.drawable.camera_solid)
+        btnCamara.setIconResource(R.drawable.camera_solid)
         btnCamara.isEnabled = true
     }
 
@@ -1007,7 +1044,9 @@ class DetalleRecojoActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton("Agregar") { _, _ ->
                 val monto = editMonto.text.toString().toDoubleOrNull() ?: 0.0
-                if (monto <= 0) {
+                val montoPedido = item?.pedidoCantidadCobrar?.toDoubleOrNull() ?: 0.0
+
+                if (monto <= 0 && montoPedido > 0.0) {
                     Toast.makeText(this, "El monto debe ser mayor a 0", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }

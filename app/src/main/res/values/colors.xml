@@ -12,6 +12,8 @@
     <color name="gris">#f5f5f5</color>
     <color name="amarillo">#FFEE58</color>
     <color name="md_theme_primary">#07677F</color>
+    <color name="waze_blue">#46C5F0</color>
+    <color name="whatsapp_green">#25D366</color>
 <color name="md_theme_onPrimary">#FFFFFF</color>
 <color name="md_theme_primaryContainer">#B7EAFF</color>
 <color name="md_theme_onPrimaryContainer">#004E60</color>

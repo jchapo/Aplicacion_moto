@@ -1,547 +1,440 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical">
+    android:fitsSystemWindows="true">
 
-    <LinearLayout
+    <!-- App Bar con Material Design 3 -->
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="@color/md_theme_primary">
+        android:fitsSystemWindows="true"
+        app:liftOnScroll="true">
 
-        <TextView
-            android:id="@+id/tvDetallePrecio"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Monto a cobrar: "
-            android:textSize="25sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:background="@color/md_theme_inversePrimary"
-            android:padding="12dp"/>
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:menu="@menu/detail_menu">
 
-        <!-- Botón Editar Pedido -->
-        <FrameLayout
-            android:id="@+id/frameEditarPedido"
-            android:visibility="gone"
-            android:layout_width="50dp"
-            android:layout_height="match_parent">
-
-            <ImageButton
-                android:id="@+id/btnEditarPedido"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/frameEditarPedido"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="@null"
-                android:src="@drawable/pen_to_square_solid"
-                android:contentDescription="Editar Cliente"
-                android:scaleType="fitCenter"
-                android:padding="13dp"/>
-        </FrameLayout>
-    </LinearLayout>
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-    <!-- Información de monto a cobrar -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/tvDetallePrecio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="S/. 25.50"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:textColor="?attr/colorOnSurface"
+                    android:gravity="center"
+                    android:padding="12dp" />
 
+            </LinearLayout>
 
-    <!-- Contenedor scrollable para tarjetas -->
-    <ScrollView
-        android:id="@+id/tvDetalleScroll"
+        </com.google.android.material.appbar.MaterialToolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Contenido principal -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    <!-- TARJETA DEL CLIENTE -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp">
-
-        <LinearLayout
-            android:id="@+id/tvCardCliente"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <LinearLayout
+            <!-- CARD DEL CLIENTE -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tvCardCliente"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@color/md_theme_primary">
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline">
 
-                <!-- Nombre del Cliente -->
-                <TextView
-                    android:id="@+id/tvDetalleCliente"
-                    android:layout_width="0dp"
-                    android:padding="16dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Cliente: Juan Pérez"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"/>
-
-                <!-- Botón Editar -->
-                <FrameLayout
-                    android:layout_width="50dp"
-                    android:layout_height="match_parent">
-
-                    <ImageButton
-                        android:id="@+id/btnEditarCliente"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:background="@null"
-                        android:src="@drawable/location_crosshairs_solid"
-                        android:contentDescription="Editar Cliente"
-                        android:scaleType="fitCenter"
-                        android:padding="13dp"/>
-                </FrameLayout>
-            </LinearLayout>
-
-
-            <!-- Contenedor de botones para Cliente -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:padding="12dp">
-
-                <!-- Primera columna: Imagen en un CardView (peso 2) -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="10dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#f5f5f5"
-                    android:layout_margin="4dp">
+                    android:orientation="vertical">
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <ImageView
-                            android:id="@+id/imagenEntrega"
-                            android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:src="@drawable/fondo_gris_nanpi"
-                            android:scaleType="centerCrop"
-                            android:contentDescription="@string/image_description"
-                            app:layout_constraintDimensionRatio="H,3:4"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"/>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </androidx.cardview.widget.CardView>
-
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/cardDinero"
-                    android:visibility="gone"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="10dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#f5f5f5"
-                    android:layout_margin="4dp">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <ImageView
-                            android:id="@+id/imagenDinero"
-                            android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:src="@drawable/fondo_gris_nanpi"
-                            android:scaleType="centerCrop"
-                            android:contentDescription="@string/image_description"
-                            app:layout_constraintDimensionRatio="H,3:4"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"/>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </androidx.cardview.widget.CardView>
-
-                <!-- Segunda columna: Botones en dos filas (peso 1) -->
-                <LinearLayout
-                    android:id="@+id/linearLayoutContacto"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp">
-
-                    <!-- Primera fila: Waze y Maps -->
+                    <!-- Header del cliente -->
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center"
-                        android:layout_marginBottom="4dp">
+                        android:background="?attr/colorSurfaceContainer"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
 
-                        <FrameLayout
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/tvDetalleCliente"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Juan Pérez"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            android:drawableStart="@drawable/ic_person_24"
+                            android:drawablePadding="12dp"
+                            android:drawableTint="?attr/colorPrimary" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnEditarCliente"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:icon="@drawable/location_crosshairs_solid"
+                            app:iconSize="24dp"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:contentDescription="Ubicar cliente" />
+
+                    </LinearLayout>
+
+                    <!-- Contenido del cliente -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <!-- Imagen -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="160dp"
+                            android:layout_weight="2"
+                            android:layout_marginEnd="16dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="?attr/colorOutlineVariant">
+
+                            <ImageView
+                                android:id="@+id/imagenEntrega"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/fondo_gris_nanpi"
+                                android:scaleType="centerCrop"
+                                android:contentDescription="Foto de entrega" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Imagen de dinero (oculta) -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardDinero"
+                            android:layout_width="0dp"
+                            android:layout_height="160dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="16dp"
+                            android:visibility="gone"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="?attr/colorOutlineVariant">
+
+                            <ImageView
+                                android:id="@+id/imagenDinero"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/fondo_gris_nanpi"
+                                android:scaleType="centerCrop"
+                                android:contentDescription="Foto de pago" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Botones de acción -->
+                        <LinearLayout
+                            android:id="@+id/linearLayoutContacto"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
+                            android:orientation="vertical"
+                            android:gravity="center">
 
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
+                            <!-- Primera fila -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="8dp">
 
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnWazeCliente"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/waze_brands"
-                                    android:background="@null"
-                                    android:contentDescription="@string/waze_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    android:layout_marginEnd="8dp"
+                                    app:icon="@drawable/waze_brands"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="@color/waze_blue"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Abrir en Waze" />
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
-
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
-
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnMapsCliente"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/map_regular"
-                                    android:background="@null"
-                                    android:contentDescription="@string/maps_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
-                    </LinearLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    app:icon="@drawable/map_regular"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="?attr/colorPrimary"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Abrir en Maps" />
 
-                    <!-- Segunda fila: WhatsApp y Teléfono -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center">
+                            </LinearLayout>
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
+                            <!-- Segunda fila -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
 
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
-
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnWhatsappCliente"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/whatsapp_brands"
-                                    android:background="@null"
-                                    android:contentDescription="@string/whatsapp_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    android:layout_marginEnd="8dp"
+                                    app:icon="@drawable/whatsapp_brands"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="@color/whatsapp_green"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Enviar WhatsApp" />
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
-
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
-
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnTelefonoCliente"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/phone_solid"
-                                    android:background="@null"
-                                    android:contentDescription="@string/telefono_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    app:icon="@drawable/phone_solid"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="?attr/colorPrimary"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Llamar" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
                     </LinearLayout>
+
                 </LinearLayout>
-            </LinearLayout>        </LinearLayout>
-    </androidx.cardview.widget.CardView>
 
-    <!-- TARJETA DEL PROVEEDOR -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp">
+            </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
-            android:id="@+id/tvCardProveedor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- Título de la tarjeta Proveedor -->
-            <TextView
-                android:id="@+id/tvDetalleProveedor"
+            <!-- CARD DEL PROVEEDOR -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tvCardProveedor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Proveedor: "
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:padding="16dp"
-                android:textColor="@color/white"
-                android:background="@color/md_theme_primary"/>
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline">
 
-            <!-- Contenedor de botones para Proveedor -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:padding="12dp">
-
-                <!-- Primera columna: Imagen en un CardView (igual que el cliente) -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="10dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#f5f5f5"
-                    android:layout_margin="4dp">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <ImageView
-                            android:id="@+id/imagenRecojo"
-                            android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:src="@drawable/fondo_gris_nanpi"
-                            android:scaleType="centerCrop"
-                            android:contentDescription="@string/image_description"
-                            app:layout_constraintDimensionRatio="H,3:4"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"/>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </androidx.cardview.widget.CardView>
-
-                <!-- Segunda columna: Botones en dos filas (igual que cliente) -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp">
+                    android:orientation="vertical">
 
-                    <!-- Primera fila: Waze y Maps -->
+                    <!-- Header del proveedor -->
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center"
-                        android:layout_marginBottom="4dp">
+                        android:background="?attr/colorSurfaceContainer"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
 
-                        <FrameLayout
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/tvDetalleProveedor"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Restaurante Central"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:textColor="?attr/colorOnSurface"
+                            android:drawableStart="@drawable/ic_store_24"
+                            android:drawablePadding="12dp"
+                            android:drawableTint="?attr/colorSecondary" />
+
+                    </LinearLayout>
+
+                    <!-- Contenido del proveedor -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <!-- Imagen -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="160dp"
+                            android:layout_weight="2"
+                            android:layout_marginEnd="16dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="?attr/colorOutlineVariant">
+
+                            <ImageView
+                                android:id="@+id/imagenRecojo"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/fondo_gris_nanpi"
+                                android:scaleType="centerCrop"
+                                android:contentDescription="Foto de recojo" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Botones de acción -->
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
+                            android:orientation="vertical"
+                            android:gravity="center">
 
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
+                            <!-- Primera fila -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="8dp">
 
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnWazeProveedor"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/waze_brands"
-                                    android:background="@null"
-                                    android:contentDescription="@string/waze_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    android:layout_marginEnd="8dp"
+                                    app:icon="@drawable/waze_brands"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
+                                    app:iconTint="@color/waze_blue"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Abrir en Waze" />
 
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
-
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnMapsProveedor"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/map_regular"
-                                    android:background="@null"
-                                    android:contentDescription="@string/maps_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
-                    </LinearLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    app:icon="@drawable/map_regular"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="?attr/colorPrimary"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Abrir en Maps" />
 
-                    <!-- Segunda fila: WhatsApp y Teléfono -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center">
+                            </LinearLayout>
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
+                            <!-- Segunda fila -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
 
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
-
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnWhatsappProveedor"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/whatsapp_brands"
-                                    android:background="@null"
-                                    android:contentDescription="@string/whatsapp_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    android:layout_marginEnd="8dp"
+                                    app:icon="@drawable/whatsapp_brands"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="@color/whatsapp_green"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Enviar WhatsApp" />
 
-                        <FrameLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp">
-
-                            <androidx.cardview.widget.CardView
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                app:cardCornerRadius="10dp"
-                                app:cardElevation="2dp"
-                                app:cardBackgroundColor="#f5f5f5">
-
-                                <ImageButton
+                                <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnTelefonoProveedor"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:src="@drawable/phone_solid"
-                                    android:background="@null"
-                                    android:contentDescription="@string/telefono_description"
-                                    android:scaleType="fitCenter"
-                                    android:padding="10dp"/>
-                            </androidx.cardview.widget.CardView>
-                        </FrameLayout>
+                                    android:layout_width="60dp"
+                                    android:layout_height="60dp"
+                                    app:icon="@drawable/phone_solid"
+                                    app:iconSize="24dp"
+                                    app:iconGravity="textStart"
+                                    app:iconTint="?attr/colorPrimary"
+                                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                                    android:contentDescription="Llamar" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
                     </LinearLayout>
+
                 </LinearLayout>
-            </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+    </androidx.core.widget.NestedScrollView>
 
-        </LinearLayout>
-    </ScrollView>
-
-
-    <!-- Botones al fondo -->
+    <!-- Botones flotantes inferiores -->
     <LinearLayout
         android:id="@+id/layout_botones"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
         android:orientation="horizontal"
-        android:background="#EEEEEE"
-        android:padding="8dp"
-        android:elevation="4dp">
+        android:background="?attr/colorSurface"
+        android:elevation="8dp"
+        android:padding="16dp">
 
-        <ImageButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCamara"
             android:layout_width="0dp"
-            android:layout_height="60dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:scaleType="centerInside"
-            android:background="@drawable/rounded_button"
-            android:padding="10dp"
             android:layout_marginEnd="8dp"
-            android:src="@drawable/camera_solid"
+            android:text="Cámara"
+            app:icon="@drawable/camera_solid"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            style="@style/Widget.Material3.Button.UnelevatedButton"
             android:contentDescription="Abrir cámara" />
 
-        <ImageButton
-            android:visibility="gone"
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDinero"
             android:layout_width="0dp"
-            android:layout_height="60dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:scaleType="centerInside"
-            android:background="@drawable/rounded_button"
-            android:padding="10dp"
             android:layout_marginEnd="8dp"
-            android:src="@drawable/money_bill_wave_solid"
-            android:contentDescription="Confirmar acción" />
+            android:visibility="gone"
+            android:text="Dinero"
+            app:icon="@drawable/money_bill_wave_solid"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            style="@style/Widget.Material3.Button.UnelevatedButton"
+            android:contentDescription="Foto de dinero" />
 
-        <ImageButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCheck"
             android:layout_width="0dp"
-            android:layout_height="60dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:scaleType="centerInside"
-            android:background="@drawable/rounded_button"
-            android:padding="10dp"
-            android:src="@drawable/check_solid"
+            android:text="Confirmar"
+            app:icon="@drawable/check_solid"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            style="@style/Widget.Material3.Button"
             android:contentDescription="Confirmar acción" />
+
     </LinearLayout>
 
-
-
-</LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

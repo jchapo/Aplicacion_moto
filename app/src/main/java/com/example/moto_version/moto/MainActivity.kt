@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -685,21 +684,24 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun escucharCambiosEnUsuario() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
+            val uid = user.uid  // 🔑 El UID autenticado
+
             usuarioListener = db.collection("usuarios")
-                .whereEqualTo("email", user.email)
-                .addSnapshotListener { snapshots, error ->
+                .document(uid)   // ✅ Acceder directamente al doc del usuario
+                .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         Log.e("Firestore", "Error al escuchar cambios", error)
                         return@addSnapshotListener
                     }
 
                     // Si el documento del usuario no existe, cerrar sesión
-                    if (snapshots == null || snapshots.isEmpty) {
+                    if (snapshot == null || !snapshot.exists()) {
                         cerrarSesion()
                     }
                 }
         }
     }
+
 
     private fun cerrarSesion() {
         FirebaseAuth.getInstance().signOut()  // Cerrar sesión en Firebase

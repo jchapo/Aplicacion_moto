@@ -8,4 +8,12 @@
     <string name="mensaje_de_tarjeta_vac_a">No hay pedidos registrados</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="navigation_section">Navegación</string>
+    <string name="contact_section">Contacto</string>
+    <string name="delivery_label">Entrega</string>
+    <string name="pickup_label">Recojo</string>
+    <string name="payment_label">Pago</string>
+    <string name="camera_button">Cámara</string>
+    <string name="payment_button">Pago</string>
+    <string name="confirm_button">Confirmar</string>
 </resources>

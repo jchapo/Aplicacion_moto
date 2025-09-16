@@ -388,10 +388,42 @@ class MapaPedidoFragment : Fragment(R.layout.fragment_mapa_pedido), OnMapReadyCa
             var hayPuntos = false
 
             for (punto in puntosRecojoLista) {
-                boundsBuilder.include(punto.ubicacionCliente)
-                boundsBuilder.include(punto.ubicacionProveedor)
-                hayPuntos = true
+                val latCliente = punto.ubicacionCliente.latitude
+                val lonCliente = punto.ubicacionCliente.longitude
+                val cliente = punto.clienteNombre
+                val clienteId = punto.id
+                val latProveedor = punto.ubicacionProveedor.latitude
+                val lonProveedor = punto.ubicacionProveedor.longitude
+                val proveedor = punto.proveedorNombre
+                val proveedorId = punto.id
+
+                var clienteDentroDeRango = true
+                var proveedorDentroDeRango = true
+
+                // Verificar si la latitud y longitud del cliente están fuera del rango permitido
+                if (!(latCliente in -12.5..-11.0 && lonCliente in -77.5..-76.0)) {
+                    Log.d("Mapa", "Ubicación Cliente fuera de rango: Lat=$latCliente, Lon=$lonCliente para el cliente $cliente con el Id $clienteId")
+                    clienteDentroDeRango = false
+                }
+
+                // Verificar si la latitud y longitud del proveedor están fuera del rango permitido
+                if (!(latProveedor in -12.5..-11.0 && lonProveedor in -77.5..-76.0)) {
+                    Log.d("Mapa", "Ubicación Proveedor fuera de rango: Lat=$latProveedor, Lon=$lonProveedor para el proveedor $proveedor con el Id $proveedorId")
+                    proveedorDentroDeRango = false
+                }
+
+                // Solo incluir en boundsBuilder si están dentro del rango permitido
+                if (clienteDentroDeRango) {
+                    boundsBuilder.include(punto.ubicacionCliente)
+                    hayPuntos = true
+                }
+                if (proveedorDentroDeRango) {
+                    boundsBuilder.include(punto.ubicacionProveedor)
+                    hayPuntos = true
+                }
             }
+
+
 
 
             if (!hayPuntos) {
