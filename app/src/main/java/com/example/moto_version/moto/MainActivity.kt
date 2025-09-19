@@ -684,23 +684,25 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun escucharCambiosEnUsuario() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
-            val uid = user.uid  // 🔑 El UID autenticado
+            val uid = user.uid
 
             usuarioListener = db.collection("usuarios")
-                .document(uid)   // ✅ Acceder directamente al doc del usuario
+                .document(uid)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         Log.e("Firestore", "Error al escuchar cambios", error)
                         return@addSnapshotListener
                     }
 
-                    // Si el documento del usuario no existe, cerrar sesión
-                    if (snapshot == null || !snapshot.exists()) {
+                    // Solo validar el campo enabled
+                    val enabled = snapshot?.getBoolean("enabled") ?: true
+                    if (!enabled) {
                         cerrarSesion()
                     }
                 }
         }
     }
+
 
 
     private fun cerrarSesion() {

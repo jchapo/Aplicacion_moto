@@ -89,6 +89,8 @@ exports.createUserWithRole = functions.https.onCall(async (data, context) => {
       rol: rol,
       ruta: rol === "Motorizado" ? ruta : "",
       fechaCreacion: admin.firestore.FieldValue.serverTimestamp(),
+      uid: userRecord.uid,
+      enable: true,
     };
 
     console.log("Datos para Firestore:", usuarioData);

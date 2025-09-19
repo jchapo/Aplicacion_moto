@@ -9,6 +9,7 @@ class Usuario {
     var phone: String? = null
     var rol: String? = null
     var ruta: String? = null
+    var uid: String? = null
 
     // Constructor vacío para Firebase
     constructor()
@@ -21,7 +22,8 @@ class Usuario {
         nombreEmpresa: String?,
         phone: String?,
         rol: String?,
-        ruta: String?
+        ruta: String?,
+        uid: String?
     ) {
         this.nombre = nombre
         this.apellido = apellido
@@ -30,9 +32,14 @@ class Usuario {
         this.phone = phone
         this.rol = rol
         this.ruta = ruta
+        this.uid = uid
     }
 
     val nombreCompleto: String
         // Método para obtener el nombre completo
         get() = "$nombre $apellido"
+
+    val rutaAsignada: String
+        // Método para obtener ruta
+        get() = "$rol: $ruta"
 }

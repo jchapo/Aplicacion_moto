@@ -5,6 +5,8 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.MenuItem
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Toast
@@ -23,7 +25,8 @@ class AgregarUsuarioActivity : AppCompatActivity() {
     private var etEmail: TextInputEditText? = null
     private var etNombreEmpresa: TextInputEditText? = null
     private var etPhone: TextInputEditText? = null
-    private var etRuta: TextInputEditText? = null // Agregar después de etPhone
+    private var etRuta: AutoCompleteTextView? = null
+    private var etUid: String? = null
     private lateinit var btnGuardar: Button
     private var progressBar: ProgressBar? = null
     private var db: FirebaseFirestore? = null
@@ -60,7 +63,16 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         }
 
         etPhone = findViewById(R.id.etPhone)
+        val opciones = listOf("NOR", "SUR", "EST", "OES")
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            opciones
+        )
+
         etRuta = findViewById(R.id.etRuta)
+        etRuta?.setAdapter(adapter)
         if (tipoUsuario != "Motorizado") {
             etRuta?.visibility = View.GONE
         }
@@ -127,15 +139,17 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         val esProveedor = tipoUsuario == "Proveedor"
         val esMotorizado = tipoUsuario == "Motorizado"
         val todosLosCamposLlenos =
-            (!etNombre!!.text.isNullOrBlank() &&
-                    !etApellido!!.text.isNullOrBlank() &&
-                    !etEmail!!.text.isNullOrBlank() &&
-                    (!esProveedor || !etNombreEmpresa!!.text.isNullOrBlank()) &&
-                    (!esMotorizado || !etRuta!!.text.isNullOrBlank()) &&
-                    !etPhone!!.text.isNullOrBlank() && etPhone!!.text!!.length == 9)
+            (!etNombre?.text.isNullOrBlank() &&
+                    !etApellido?.text.isNullOrBlank() &&
+                    !etEmail?.text.isNullOrBlank() &&
+                    (!esProveedor || !etNombreEmpresa?.text.isNullOrBlank()) &&
+                    (!esMotorizado || !etRuta?.text.isNullOrBlank()) &&
+                    !etPhone?.text.isNullOrBlank() &&
+                    (etPhone?.text?.length == 9))
 
         btnGuardar.isEnabled = todosLosCamposLlenos
     }
+
 
     private fun guardarUsuario() {
         btnGuardar.visibility = View.INVISIBLE
@@ -274,16 +288,17 @@ class AgregarUsuarioActivity : AppCompatActivity() {
             nombre,
             apellido,
             email,
-            nombreEmpresa, // Ya viene procesado desde guardarUsuario()
+            nombreEmpresa,
             phone,
             tipoUsuario,
-            ruta
+            ruta,
+            etUid
         )
 
         db!!.collection("usuarios").document(userId)
             .set(usuario)
             .addOnSuccessListener {
-                Toast.makeText(this, "$tipoUsuario actualizado con éxito", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "$tipoUsuario actualizado con éxito $nombre $apellido", Toast.LENGTH_SHORT).show()
                 finish()
             }
             .addOnFailureListener { exception ->
@@ -301,8 +316,11 @@ class AgregarUsuarioActivity : AppCompatActivity() {
                     etEmail?.setText(document.getString("email"))
                     etNombreEmpresa?.setText(document.getString("nombreEmpresa"))
                     etPhone?.setText(document.getString("phone"))
-                    etRuta?.setText(document.getString("ruta"))
 
+                    val rutaGuardada = document.getString("ruta")
+                    etRuta?.setText(rutaGuardada, false) // 👈 Aquí el fix
+
+                    etUid = document.getString("uid")
                 }
             }
             .addOnFailureListener {
@@ -317,7 +335,14 @@ class AgregarUsuarioActivity : AppCompatActivity() {
     }
 
     private fun capitalizeFirstLetter(text: String): String {
-        return text.lowercase(Locale.getDefault()).replaceFirstChar { it.uppercase() }
+        return text
+            .lowercase(Locale.getDefault())
+            .split(" ")
+            .joinToString(" ") { word ->
+                word.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                }
+            }
     }
 
     private fun generarPasswordTemporal(): String {
@@ -333,7 +358,7 @@ class AgregarUsuarioActivity : AppCompatActivity() {
         // Por ejemplo, en un dialog o enviarlo por otro medio al usuario
         Toast.makeText(
             this,
-            "Usuario creado. Email: $email\nContraseña temporal: $password",
+            "Temporal: $password",
             Toast.LENGTH_LONG
         ).show()
 

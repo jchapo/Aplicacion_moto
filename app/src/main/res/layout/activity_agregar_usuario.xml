@@ -127,14 +127,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-                        <com.google.android.material.textfield.TextInputEditText
+                        <AutoCompleteTextView
                             android:id="@+id/etRuta"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Ruta (ej: SUR, NORTE, ESTE, OESTE)" />
+                            android:hint="Ruta"
+                            android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>

@@ -22,9 +22,10 @@ class MotorizadosAdapter(private val context: Context, private var motorizados: 
 
     override fun onBindViewHolder(holder: ProveedorViewHolder, position: Int) {
         val proveedor = motorizados!![position]
-        holder.tvNombreEmpresa.text = proveedor.nombreEmpresa
+        holder.tvNombreEmpresa.text = proveedor.rutaAsignada
         holder.tvNombreCompleto.text = proveedor.nombreCompleto
-        holder.tvEmail.text = proveedor.email
+        holder.tvEmail.visibility = View.GONE
+        //holder.tvEmail.text = proveedor.email
 
         // Acción para el botón de llamada
         holder.btnLlamar.setOnClickListener {
@@ -36,11 +37,16 @@ class MotorizadosAdapter(private val context: Context, private var motorizados: 
             }
         }
 
+        // Acción para el botón de eliminar
+        holder.btnEliminar.setOnClickListener {
+
+        }
+
         // Acción para el clic en el resto del item
         holder.itemView.setOnClickListener {
             val intent = Intent(context, AgregarUsuarioActivity::class.java)
-            intent.putExtra("userId", proveedor.phone)
-            intent.putExtra("tipoUsuario", "Motorizado")
+            intent.putExtra("userId", proveedor.uid)
+            intent.putExtra("tipoUsuario", proveedor.rol)
             context.startActivity(intent)
         }
     }
@@ -59,5 +65,6 @@ class MotorizadosAdapter(private val context: Context, private var motorizados: 
         var tvNombreCompleto: TextView = itemView.findViewById<TextView>(R.id.tvNombreCompleto)
         var tvEmail: TextView = itemView.findViewById<TextView>(R.id.tvEmail)
         var btnLlamar: ImageButton = itemView.findViewById<ImageButton>(R.id.btnLlamar)
+        var btnEliminar: ImageButton = itemView.findViewById<ImageButton>(R.id.btnEliminar)
     }
 }
